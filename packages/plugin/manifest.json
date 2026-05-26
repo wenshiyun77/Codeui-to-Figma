@@ -1,5 +1,5 @@
 {
-  "name": "CodeUi to Figma",
+  "name": "CodeUi-to-Figma",
   "id": "codeui-to-figma",
   "api": "1.0.0",
   "main": "code.js",
@@ -10,6 +10,6 @@
     "devAllowedDomains": [
       "http://localhost:39217/"
     ],
-    "reasoning": "The development plugin connects to the local CodeUi to Figma bridge server to claim import jobs, fetch local activity-page assets, save manual annotations, and post execution results."
+    "reasoning": "The development plugin connects to the local CodeUi-to-Figma bridge server to claim import jobs, fetch local activity-page assets, save manual annotations, and post execution results."
   }
 }

@@ -21,7 +21,7 @@ const UI_HTML = [
   "</head>",
   "<body>",
   "  <main>",
-  "    <h1>CodeUi to Figma</h1>",
+  "    <h1>CodeUi-to-Figma</h1>",
   "    <label>Bridge URL<input id=\"bridgeUrl\" value=\"http://localhost:39217\" /></label>",
   "    <div class=\"row\">",
   "      <button id=\"startButton\">Start polling</button>",
@@ -183,7 +183,7 @@ function buildPluginUiHtml() {
 <body>
   <header>
     <div>
-      <h1>CodeUi to Figma</h1>
+      <h1>CodeUi-to-Figma</h1>
       <div class="small">导入轮询 + Figma 内置人工标注工作台</div>
     </div>
     <div class="tabs">
@@ -211,7 +211,7 @@ function buildPluginUiHtml() {
 
   <section class="view" id="annotateView">
     <div class="workTop">
-      <label>Package 目录<input id="packageDir" placeholder="/Users/mac/Documents/Figma插件化/var/generated/xxx"></label>
+      <label>Package 目录<input id="packageDir" placeholder="/Users/mac/Documents/CodeUi-to-Figma/var/generated/xxx"></label>
       <button id="loadPackage">加载源图</button>
       <button id="fitButton" class="secondary">适配宽度</button>
       <button id="saveHandoff">保存并交给 Codex</button>

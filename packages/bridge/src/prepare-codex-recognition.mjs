@@ -47,7 +47,7 @@ if (annotations) {
 
 function buildPromptMarkdown({ inputPath, packageDir, outputDir, prompt, requiredModel, annotationsPath, annotations, recognitionSchema, tasksSchema }) {
   return [
-    "# CodeUi to Figma Recognition Task",
+    "# CodeUi-to-Figma Recognition Task",
     "",
     `Required Codex model: ${requiredModel}`,
     "",

@@ -1,6 +1,6 @@
-# CodeUi to Figma Architecture
+# CodeUi-to-Figma Architecture
 
-CodeUi to Figma is an image2 activity-page-to-Figma bridge built from three cooperating pieces:
+CodeUi-to-Figma is an image2 activity-page-to-Figma bridge built from three cooperating pieces:
 
 - Codex skill: drives recognition, validates `page.json`, plans image2 cutouts, and submits Bridge jobs.
 - Local Bridge: stores packages, annotations, handoff files, assets, and Figma import jobs.

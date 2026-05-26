@@ -1,13 +1,13 @@
-# CodeUi to Figma 桥接流程说明
+# CodeUi-to-Figma 桥接流程说明
 
-这份文档说明 CodeUi to Figma 里各个系统如何协作。目标是让同事能够复用同一套流程，而不是依赖某个人手动记命令。
+这份文档说明 CodeUi-to-Figma 里各个系统如何协作。目标是让同事能够复用同一套流程，而不是依赖某个人手动记命令。
 
 ## 角色分工
 
 - Codex：负责读取图像和人工标注，执行元素识别、结构化 `page.json`、规划 image2 去背景任务、校验质量、提交 Figma 导入任务。
 - image2：负责生成活动页主视觉，以及所有艺术字/前景素材的透明底去背景结果。
 - Local Bridge：运行在 `http://localhost:39217`，负责存储 package、人工标注、handoff、素材读取、任务队列和 Figma 执行结果。
-- Figma 插件：名为 `CodeUi to Figma`，内置 `导入轮询` 和 `标注工作台` 两个入口。
+- Figma 插件：名为 `CodeUi-to-Figma`，内置 `导入轮询` 和 `标注工作台` 两个入口。
 - page package：一个本地目录，包含 `page.json`、`assets/`、`source/`、`analysis/`。
 
 ## 文件结构
@@ -35,7 +35,7 @@ var/generated/example-page/
 
 1. Codex 生成或接收 image2 输出图，并创建 page package。
 2. Codex 运行解析脚本，得到临时 `page.json` 和源图引用。
-3. 用户打开 Figma 插件 `CodeUi to Figma`。
+3. 用户打开 Figma 插件 `CodeUi-to-Figma`。
 4. 用户进入 `标注工作台`，填写 package 绝对路径，点击 `加载源图`。
 5. 用户在 Figma 插件里框选区域、选择区域类型、填写中文备注。
 6. 用户点击 `保存并交给 Codex`。

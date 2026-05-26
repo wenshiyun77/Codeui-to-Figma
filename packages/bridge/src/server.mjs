@@ -142,7 +142,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`CodeUi to Figma Bridge listening on http://${HOST}:${PORT}`);
+  console.log(`CodeUi-to-Figma Bridge listening on http://${HOST}:${PORT}`);
   console.log(`Workspace root: ${ROOT_DIR}`);
 });
 

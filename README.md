@@ -1,11 +1,11 @@
-# CodeUi to Figma
+# CodeUi-to-Figma
 
-CodeUi to Figma is a local Codex + Bridge + Figma plugin workflow for turning image2-generated campaign/activity page visuals into layered Figma pages.
+CodeUi-to-Figma is a local Codex + Bridge + Figma plugin workflow for turning image2-generated campaign/activity page visuals into layered Figma pages.
 
 It currently includes:
 
 - A local Bridge server on `http://localhost:39217`.
-- A Figma plugin named `CodeUi to Figma` with import polling and a built-in Chinese annotation workbench.
+- A Figma plugin named `CodeUi-to-Figma` with import polling and a built-in Chinese annotation workbench.
 - A Codex skill named `codeui-to-figma` for recognition, image2 cutout planning, validation, and Figma submission.
 - A `page.json` scene graph contract for long-form activity pages.
 - Bridge/setup documentation for team handoff.
@@ -50,7 +50,7 @@ Then import this manifest in Figma Desktop:
 packages/plugin/manifest.json
 ```
 
-Run `CodeUi to Figma`, keep the Bridge URL as `http://localhost:39217`, and use `导入轮询` / `标注工作台`.
+Run `CodeUi-to-Figma`, keep the Bridge URL as `http://localhost:39217`, and use `导入轮询` / `标注工作台`.
 
 The Codex skill source is stored in:
 
@@ -107,7 +107,7 @@ In Figma Desktop:
 
 1. Open `Plugins > Development > Import plugin from manifest...`.
 2. Select `packages/plugin/manifest.json`.
-3. Run `CodeUi to Figma`.
+3. Run `CodeUi-to-Figma`.
 4. Keep the Bridge URL as `http://localhost:39217`.
 5. Use `导入轮询` to receive finished import jobs.
 6. Use `标注工作台` to load a package directory, draw annotation boxes, write Chinese instructions, and click `保存并交给 Codex`.
@@ -201,7 +201,7 @@ Foreground cutouts must use image2 background removal. The local parser should n
 
 For complex pages, create manual region constraints before recognition. The preferred path is inside the Figma plugin:
 
-1. Open `CodeUi to Figma`.
+1. Open `CodeUi-to-Figma`.
 2. Switch to `标注工作台`.
 3. Paste the package directory, for example `var/generated/qixi-parsed` as an absolute path.
 4. Click `加载源图`.

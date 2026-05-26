@@ -1,4 +1,4 @@
 interface:
-  display_name: "CodeUi to Figma"
+  display_name: "CodeUi-to-Figma"
   short_description: "Generate image2 activity-page Figma imports through the local Bridge."
-  default_prompt: "Generate an activity page and import it into Figma using CodeUi to Figma."
+  default_prompt: "Generate an activity page and import it into Figma using CodeUi-to-Figma."

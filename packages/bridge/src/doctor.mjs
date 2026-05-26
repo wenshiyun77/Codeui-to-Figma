@@ -16,7 +16,7 @@ const checks = [
   ["Start bridge script", "scripts/macos/start-bridge.command"]
 ];
 
-console.log("CodeUi to Figma doctor");
+console.log("CodeUi-to-Figma doctor");
 console.log("");
 console.log(`Node: ${process.version}`);
 console.log(`Project: ${root}`);

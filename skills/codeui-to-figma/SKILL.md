@@ -1,13 +1,13 @@
 ---
 name: codeui-to-figma
-description: Generate or import image2-first campaign/activity landing pages into Figma through the local CodeUi to Figma Bridge. Use when the user asks to create an activity page, campaign page, promotion page, landing page, or visual UI page and send/import/rebuild it in Figma using the Bridge, page.json, assets, or the CodeUi to Figma workflow.
+description: Generate or import image2-first campaign/activity landing pages into Figma through the local CodeUi-to-Figma Bridge. Use when the user asks to create an activity page, campaign page, promotion page, landing page, or visual UI page and send/import/rebuild it in Figma using the Bridge, page.json, assets, or the CodeUi-to-Figma workflow.
 ---
 
-# CodeUi to Figma
+# CodeUi-to-Figma
 
 ## Overview
 
-Use this skill to produce or submit an activity-page package to the local CodeUi to Figma Bridge. The Figma plugin polls `http://localhost:39217`, claims jobs, and reconstructs `page.json + assets/` into a Figma page.
+Use this skill to produce or submit an activity-page package to the local CodeUi-to-Figma Bridge. The Figma plugin polls `http://localhost:39217`, claims jobs, and reconstructs `page.json + assets/` into a Figma page.
 
 This workflow is image2-first: the generated image is the visual source of truth, while `page.json` and assets are the structured reconstruction package.
 
