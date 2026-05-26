@@ -2,6 +2,8 @@
 
 CodeUi-to-Figma is a local Codex + Bridge + Figma plugin workflow for turning image2-generated campaign/activity page visuals into layered Figma pages.
 
+目标是把 AI 生成的静态活动页 UI 转成 Figma 页面，并产出完整标注信息和切图素材，供设计师和前端开发落地使用。
+
 It currently includes:
 
 - A local Bridge server on `http://localhost:39217`.
