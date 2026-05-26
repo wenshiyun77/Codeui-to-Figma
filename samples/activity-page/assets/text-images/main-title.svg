@@ -1,0 +1,7 @@
+<svg width="602" height="208" viewBox="0 0 602 208" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M34 30H568C586.778 30 602 45.2223 602 64V144C602 162.778 586.778 178 568 178H34C15.2223 178 0 162.778 0 144V64C0 45.2223 15.2223 30 34 30Z" fill="#FFF7D2" opacity="0.28"/>
+  <text x="301" y="92" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="72" font-weight="900" fill="#FFF9C7" stroke="#B9180D" stroke-width="8" paint-order="stroke">夏日狂欢节</text>
+  <text x="301" y="162" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="54" font-weight="900" fill="#FFFFFF" stroke="#7D120A" stroke-width="6" paint-order="stroke">全场低至 5 折</text>
+  <circle cx="44" cy="42" r="16" fill="#FFE678"/>
+  <circle cx="562" cy="168" r="18" fill="#FFE678"/>
+</svg>

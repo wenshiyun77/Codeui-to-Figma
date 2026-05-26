@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "activity-page.v0.1",
+  "name": "Invalid Parser Baseline",
+  "canvas": {
+    "width": 750,
+    "height": 1600,
+    "background": "#FFFFFF",
+    "sourceImage": "source/image2-screen.png"
+  },
+  "metadata": {
+    "id": "invalid-baseline",
+    "parser": "parse-image-package.mjs",
+    "parserVersion": "0.1",
+    "pipelineState": "requires-codex-recognition",
+    "baselineOnly": true,
+    "requiresRecognition": true,
+    "recognitionRequired": true
+  },
+  "sections": [
+    {
+      "id": "section_01",
+      "type": "section",
+      "x": 0,
+      "y": 0,
+      "width": 750,
+      "height": 800,
+      "children": [
+        {
+          "id": "section_01_bg",
+          "type": "backgroundImage",
+          "asset": "assets/backgrounds/section-01-bg.png",
+          "x": 0,
+          "y": 0,
+          "width": 750,
+          "height": 800,
+          "fit": "cover"
+        }
+      ]
+    },
+    {
+      "id": "section_02",
+      "type": "section",
+      "x": 0,
+      "y": 800,
+      "width": 750,
+      "height": 800,
+      "children": [
+        {
+          "id": "section_02_bg",
+          "type": "backgroundImage",
+          "asset": "assets/backgrounds/section-02-bg.png",
+          "x": 0,
+          "y": 0,
+          "width": 750,
+          "height": 800,
+          "fit": "cover"
+        }
+      ]
+    }
+  ]
+}

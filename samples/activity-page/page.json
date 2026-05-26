@@ -1,0 +1,276 @@
+{
+  "schemaVersion": "activity-page.v0.1",
+  "name": "618 Summer Sale Activity Page",
+  "canvas": {
+    "width": 750,
+    "height": 1500,
+    "background": "#FFF1EC",
+    "sourceImage": "source/image2-screen.png"
+  },
+  "metadata": {
+    "intent": "Sample activity landing page reconstructed from image2-style layered assets",
+    "unit": "px"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "section",
+      "name": "Hero",
+      "x": 0,
+      "y": 0,
+      "width": 750,
+      "height": 720,
+      "children": [
+        {
+          "id": "hero_bg",
+          "type": "backgroundImage",
+          "asset": "assets/backgrounds/hero-bg.svg",
+          "x": 0,
+          "y": 0,
+          "width": 750,
+          "height": 720,
+          "fit": "cover"
+        },
+        {
+          "id": "main_title_art",
+          "type": "textImage",
+          "asset": "assets/text-images/main-title.svg",
+          "x": 74,
+          "y": 96,
+          "width": 602,
+          "height": 208,
+          "fit": "contain"
+        },
+        {
+          "id": "date_text",
+          "type": "editableText",
+          "text": "6.18 20:00 - 6.20 23:59",
+          "x": 190,
+          "y": 322,
+          "width": 370,
+          "height": 36,
+          "fontFamily": "Inter",
+          "fontWeight": 600,
+          "fontSize": 26,
+          "lineHeight": 34,
+          "letterSpacing": 0,
+          "color": "#FFFFFF",
+          "align": "CENTER"
+        },
+        {
+          "id": "product_cluster",
+          "type": "foregroundImage",
+          "asset": "assets/foregrounds/product-cluster.svg",
+          "x": 92,
+          "y": 370,
+          "width": 566,
+          "height": 300,
+          "fit": "contain"
+        }
+      ]
+    },
+    {
+      "id": "coupon_section",
+      "type": "section",
+      "name": "Coupon Section",
+      "x": 0,
+      "y": 720,
+      "width": 750,
+      "height": 430,
+      "children": [
+        {
+          "id": "coupon_section_bg",
+          "type": "backgroundImage",
+          "asset": "assets/backgrounds/section-01-bg.svg",
+          "x": 0,
+          "y": 0,
+          "width": 750,
+          "height": 430,
+          "fit": "cover"
+        },
+        {
+          "id": "coupon_title",
+          "type": "editableText",
+          "text": "限时专属福利",
+          "x": 250,
+          "y": 42,
+          "width": 250,
+          "height": 44,
+          "fontFamily": "Inter",
+          "fontWeight": 700,
+          "fontSize": 34,
+          "lineHeight": 42,
+          "letterSpacing": 0,
+          "color": "#6E1B12",
+          "align": "CENTER"
+        },
+        {
+          "id": "coupon_card_01",
+          "type": "shape",
+          "x": 56,
+          "y": 120,
+          "width": 300,
+          "height": 176,
+          "fill": "#FFFFFF",
+          "cornerRadius": 28,
+          "effects": [
+            {
+              "type": "dropShadow",
+              "color": "#D95A35",
+              "opacity": 0.18,
+              "x": 0,
+              "y": 10,
+              "blur": 24
+            }
+          ]
+        },
+        {
+          "id": "coupon_price_01",
+          "type": "editableText",
+          "text": "¥50",
+          "x": 92,
+          "y": 150,
+          "width": 120,
+          "height": 70,
+          "fontFamily": "Inter",
+          "fontWeight": 700,
+          "fontSize": 56,
+          "lineHeight": 66,
+          "letterSpacing": 0,
+          "color": "#E33D24"
+        },
+        {
+          "id": "coupon_desc_01",
+          "type": "editableText",
+          "text": "满399可用",
+          "x": 96,
+          "y": 228,
+          "width": 180,
+          "height": 32,
+          "fontFamily": "Inter",
+          "fontWeight": 500,
+          "fontSize": 24,
+          "lineHeight": 30,
+          "letterSpacing": 0,
+          "color": "#7A3526"
+        },
+        {
+          "id": "coupon_card_02",
+          "type": "shape",
+          "x": 394,
+          "y": 120,
+          "width": 300,
+          "height": 176,
+          "fill": "#FFFFFF",
+          "cornerRadius": 28,
+          "effects": [
+            {
+              "type": "dropShadow",
+              "color": "#D95A35",
+              "opacity": 0.18,
+              "x": 0,
+              "y": 10,
+              "blur": 24
+            }
+          ]
+        },
+        {
+          "id": "coupon_price_02",
+          "type": "editableText",
+          "text": "¥120",
+          "x": 426,
+          "y": 150,
+          "width": 150,
+          "height": 70,
+          "fontFamily": "Inter",
+          "fontWeight": 700,
+          "fontSize": 56,
+          "lineHeight": 66,
+          "letterSpacing": 0,
+          "color": "#E33D24"
+        },
+        {
+          "id": "coupon_desc_02",
+          "type": "editableText",
+          "text": "满899可用",
+          "x": 434,
+          "y": 228,
+          "width": 180,
+          "height": 32,
+          "fontFamily": "Inter",
+          "fontWeight": 500,
+          "fontSize": 24,
+          "lineHeight": 30,
+          "letterSpacing": 0,
+          "color": "#7A3526"
+        }
+      ]
+    },
+    {
+      "id": "product_section",
+      "type": "section",
+      "name": "Product Grid",
+      "x": 0,
+      "y": 1150,
+      "width": 750,
+      "height": 350,
+      "children": [
+        {
+          "id": "product_bg",
+          "type": "backgroundImage",
+          "asset": "assets/backgrounds/product-bg.svg",
+          "x": 0,
+          "y": 0,
+          "width": 750,
+          "height": 350,
+          "fit": "cover"
+        },
+        {
+          "id": "buy_button",
+          "type": "shape",
+          "x": 188,
+          "y": 218,
+          "width": 374,
+          "height": 86,
+          "fill": "#E63820",
+          "cornerRadius": 43,
+          "effects": [
+            {
+              "type": "dropShadow",
+              "color": "#B51F11",
+              "opacity": 0.24,
+              "x": 0,
+              "y": 8,
+              "blur": 18
+            }
+          ]
+        },
+        {
+          "id": "buy_button_text",
+          "type": "editableText",
+          "text": "立即抢购",
+          "x": 282,
+          "y": 238,
+          "width": 186,
+          "height": 46,
+          "fontFamily": "Inter",
+          "fontWeight": 700,
+          "fontSize": 36,
+          "lineHeight": 44,
+          "letterSpacing": 0,
+          "color": "#FFFFFF",
+          "align": "CENTER"
+        },
+        {
+          "id": "buy_hotspot",
+          "type": "hotspot",
+          "x": 188,
+          "y": 218,
+          "width": 374,
+          "height": 86,
+          "action": "open-product-list"
+        }
+      ]
+    }
+  ]
+}

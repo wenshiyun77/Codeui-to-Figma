@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/figma-bridge/activity-page-v0.1.schema.json",
+  "title": "Activity Page Scene Graph v0.1",
+  "type": "object",
+  "required": ["schemaVersion", "name", "canvas"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "activity-page.v0.1"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "canvas": {
+      "$ref": "#/$defs/canvas"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/section"
+      },
+      "default": []
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/layer"
+      },
+      "default": []
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "canvas": {
+      "type": "object",
+      "required": ["width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "background": { "$ref": "#/$defs/color" },
+        "sourceImage": { "type": "string" }
+      }
+    },
+    "section": {
+      "type": "object",
+      "required": ["id", "type", "x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "section" },
+        "name": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "fill": { "$ref": "#/$defs/color" },
+        "opacity": { "$ref": "#/$defs/opacity" },
+        "cornerRadius": { "type": "number", "minimum": 0 },
+        "clipContent": { "type": "boolean" },
+        "effects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/effect" }
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/layer" },
+          "default": []
+        }
+      }
+    },
+    "layer": {
+      "oneOf": [
+        { "$ref": "#/$defs/assetLayer" },
+        { "$ref": "#/$defs/textLayer" },
+        { "$ref": "#/$defs/shapeLayer" },
+        { "$ref": "#/$defs/hotspotLayer" }
+      ]
+    },
+    "baseLayer": {
+      "type": "object",
+      "required": ["id", "type", "x", "y", "width", "height"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "name": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "opacity": { "$ref": "#/$defs/opacity" },
+        "rotation": { "type": "number" }
+      }
+    },
+    "assetLayer": {
+      "allOf": [
+        { "$ref": "#/$defs/baseLayer" },
+        {
+          "type": "object",
+          "required": ["asset"],
+          "additionalProperties": false,
+          "properties": {
+            "id": true,
+            "type": {
+              "enum": ["backgroundImage", "foregroundImage", "decorativeImage", "textImage", "image"]
+            },
+            "name": true,
+            "x": true,
+            "y": true,
+            "width": true,
+            "height": true,
+            "opacity": true,
+            "rotation": true,
+            "asset": { "type": "string", "minLength": 1 },
+            "sourceImage": { "type": "string" },
+            "extractionMethod": {
+              "enum": ["image2-remove-background", "manual", "none"]
+            },
+            "recognition": { "type": "object", "additionalProperties": true },
+            "fit": {
+              "enum": ["cover", "contain", "crop", "tile"],
+              "default": "cover"
+            },
+            "cornerRadius": { "type": "number", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "textLayer": {
+      "allOf": [
+        { "$ref": "#/$defs/baseLayer" },
+        {
+          "type": "object",
+          "required": ["text"],
+          "additionalProperties": false,
+          "properties": {
+            "id": true,
+            "type": {
+              "enum": ["editableText", "text"]
+            },
+            "name": true,
+            "x": true,
+            "y": true,
+            "width": true,
+            "height": true,
+            "opacity": true,
+            "rotation": true,
+            "text": { "type": "string" },
+            "fontFamily": { "type": "string" },
+            "fontStyle": { "type": "string" },
+            "fontSize": { "type": "number", "exclusiveMinimum": 0 },
+            "fontWeight": { "type": ["number", "string"] },
+            "lineHeight": { "type": "number", "exclusiveMinimum": 0 },
+            "letterSpacing": { "type": "number" },
+            "color": { "$ref": "#/$defs/color" },
+            "recognition": { "type": "object", "additionalProperties": true },
+            "align": {
+              "enum": ["LEFT", "CENTER", "RIGHT", "JUSTIFIED"]
+            },
+            "textAlignHorizontal": {
+              "enum": ["LEFT", "CENTER", "RIGHT", "JUSTIFIED"]
+            },
+            "textAlignVertical": {
+              "enum": ["TOP", "CENTER", "BOTTOM"]
+            }
+          }
+        }
+      ]
+    },
+    "shapeLayer": {
+      "allOf": [
+        { "$ref": "#/$defs/baseLayer" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": true,
+            "type": { "const": "shape" },
+            "name": true,
+            "x": true,
+            "y": true,
+            "width": true,
+            "height": true,
+            "opacity": true,
+            "rotation": true,
+            "fill": { "$ref": "#/$defs/color" },
+            "stroke": { "$ref": "#/$defs/color" },
+            "strokeOpacity": { "$ref": "#/$defs/opacity" },
+            "strokeWeight": { "type": "number", "minimum": 0 },
+            "cornerRadius": { "type": "number", "minimum": 0 },
+            "recognition": { "type": "object", "additionalProperties": true },
+            "effects": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/effect" }
+            }
+          }
+        }
+      ]
+    },
+    "hotspotLayer": {
+      "allOf": [
+        { "$ref": "#/$defs/baseLayer" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": true,
+            "type": { "const": "hotspot" },
+            "name": true,
+            "x": true,
+            "y": true,
+            "width": true,
+            "height": true,
+            "opacity": true,
+            "rotation": true,
+            "action": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "dropShadow" },
+        "color": { "$ref": "#/$defs/color" },
+        "opacity": { "$ref": "#/$defs/opacity" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "blur": { "type": "number", "minimum": 0 },
+        "spread": { "type": "number" }
+      }
+    },
+    "opacity": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "codeui-to-figma",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bridge": "node packages/bridge/src/server.mjs",
+    "bridge:install-service": "./scripts/macos/install-bridge-service.command",
+    "bridge:uninstall-service": "./scripts/macos/uninstall-bridge-service.command",
+    "skill:install": "./scripts/macos/install-codex-skill.command",
+    "doctor": "node packages/bridge/src/doctor.mjs",
+    "generate:activity": "node packages/bridge/src/generate-activity-package.mjs",
+    "generate:activity:submit": "node packages/bridge/src/generate-activity-package.mjs --submit --wait",
+    "parse:image": "node packages/bridge/src/parse-image-package.mjs",
+    "annotate:prepare": "node packages/bridge/src/prepare-manual-annotations.mjs",
+    "recognize:prepare": "node packages/bridge/src/prepare-codex-recognition.mjs",
+    "prepare:image2-cutouts": "node packages/bridge/src/prepare-image2-cutouts.mjs",
+    "apply:recognition": "node packages/bridge/src/apply-recognition-to-page.mjs",
+    "validate:page": "node packages/bridge/src/validate-page.mjs",
+    "submit:sample": "node packages/bridge/src/submit-page.mjs samples/activity-page/page.json --wait",
+    "reset:bridge": "node packages/bridge/src/reset.mjs",
+    "test:manual-workbench": "node packages/bridge/src/manual-workbench-self-test.mjs",
+    "test:quality": "node packages/bridge/src/quality-self-test.mjs",
+    "check": "node --check packages/bridge/src/server.mjs && node --check packages/bridge/src/submit-page.mjs && node --check packages/bridge/src/reset.mjs && node --check packages/bridge/src/doctor.mjs && node --check packages/bridge/src/generate-activity-package.mjs && node --check packages/bridge/src/parse-image-package.mjs && node --check packages/bridge/src/prepare-manual-annotations.mjs && node --check packages/bridge/src/prepare-codex-recognition.mjs && node --check packages/bridge/src/prepare-image2-cutouts.mjs && node --check packages/bridge/src/apply-recognition-to-page.mjs && node --check packages/bridge/src/png-utils.mjs && node --check packages/bridge/src/page-quality.mjs && node --check packages/bridge/src/validate-page.mjs && node --check packages/bridge/src/quality-self-test.mjs && node --check packages/bridge/src/manual-workbench-self-test.mjs && node --check packages/plugin/code.js"
+  }
+}

@@ -1,0 +1,298 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: var(--figma-color-bg);
+        color: var(--figma-color-text);
+        font-size: 12px;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 15px;
+        line-height: 20px;
+        font-weight: 650;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: var(--figma-color-text-secondary);
+      }
+
+      input {
+        height: 32px;
+        border: 1px solid var(--figma-color-border);
+        border-radius: 6px;
+        background: var(--figma-color-bg);
+        color: var(--figma-color-text);
+        padding: 0 10px;
+        font: inherit;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+
+      button {
+        height: 32px;
+        border: 1px solid var(--figma-color-border);
+        border-radius: 6px;
+        background: var(--figma-color-bg-brand);
+        color: var(--figma-color-text-onbrand);
+        padding: 0 12px;
+        font: inherit;
+        font-weight: 600;
+      }
+
+      button.secondary {
+        background: var(--figma-color-bg);
+        color: var(--figma-color-text);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+      }
+
+      .status {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 6px 10px;
+        border: 1px solid var(--figma-color-border);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .status span:nth-child(odd) {
+        color: var(--figma-color-text-secondary);
+      }
+
+      pre {
+        min-height: 180px;
+        max-height: 220px;
+        overflow: auto;
+        margin: 0;
+        border: 1px solid var(--figma-color-border);
+        border-radius: 8px;
+        padding: 10px;
+        background: var(--figma-color-bg-secondary);
+        color: var(--figma-color-text);
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>CodeUi to Figma</h1>
+
+      <label>
+        Bridge URL
+        <input id="bridgeUrl" value="http://127.0.0.1:39217" />
+      </label>
+
+      <div class="row">
+        <button id="startButton">Start polling</button>
+        <button id="onceButton" class="secondary">Run once</button>
+        <button id="stopButton" class="secondary" disabled>Stop</button>
+      </div>
+
+      <div class="status">
+        <span>State</span><strong id="state">idle</strong>
+        <span>Last job</span><strong id="lastJob">none</strong>
+        <span>Bridge</span><strong id="bridgeState">not checked</strong>
+      </div>
+
+      <pre id="log"></pre>
+    </main>
+
+    <script>
+      const bridgeInput = document.getElementById("bridgeUrl");
+      const startButton = document.getElementById("startButton");
+      const onceButton = document.getElementById("onceButton");
+      const stopButton = document.getElementById("stopButton");
+      const stateNode = document.getElementById("state");
+      const lastJobNode = document.getElementById("lastJob");
+      const bridgeStateNode = document.getElementById("bridgeState");
+      const logNode = document.getElementById("log");
+
+      let polling = false;
+      let busy = false;
+      let currentJob = null;
+      let timer = null;
+
+      bridgeInput.value = localStorage.getItem("bridgeUrl") || bridgeInput.value;
+
+      startButton.onclick = () => {
+        polling = true;
+        startButton.disabled = true;
+        stopButton.disabled = false;
+        onceButton.disabled = true;
+        tick();
+      };
+
+      onceButton.onclick = () => {
+        if (!busy) {
+          tick({ single: true });
+        }
+      };
+
+      stopButton.onclick = () => {
+        polling = false;
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        onceButton.disabled = false;
+        setState("stopped");
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      };
+
+      bridgeInput.onchange = () => {
+        localStorage.setItem("bridgeUrl", bridgeInput.value.trim());
+      };
+
+      setTimeout(() => {
+        if (!polling) {
+          appendLog("Auto polling started");
+          polling = true;
+          startButton.disabled = true;
+          stopButton.disabled = false;
+          onceButton.disabled = true;
+          tick();
+        }
+      }, 300);
+
+      window.onmessage = async (event) => {
+        const message = event.data.pluginMessage;
+        if (!message || message.type !== "job-result") {
+          return;
+        }
+
+        await postResult(message);
+        busy = false;
+        currentJob = null;
+        if (polling) {
+          timer = setTimeout(() => tick(), 1000);
+        } else {
+          setState("idle");
+        }
+      };
+
+      async function tick(options = {}) {
+        if (busy) {
+          return;
+        }
+
+        try {
+          setState("checking");
+          const bridgeUrl = getBridgeUrl();
+          const response = await fetch(`${bridgeUrl}/api/figma-bridge/jobs/next?clientId=figma-plugin`);
+          bridgeStateNode.textContent = response.ok ? "connected" : `HTTP ${response.status}`;
+          if (!response.ok) {
+            throw new Error(`Bridge returned ${response.status}`);
+          }
+
+          const data = await response.json();
+          if (!data.job) {
+            setState("idle");
+            appendLog("No queued job");
+            if (polling && !options.single) {
+              timer = setTimeout(() => tick(), 1500);
+            }
+            return;
+          }
+
+          busy = true;
+          currentJob = data.job;
+          lastJobNode.textContent = data.job.id;
+          setState("executing");
+          appendLog(`Claimed ${data.job.id}`);
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "execute-job",
+                job: data.job
+              }
+            },
+            "*"
+          );
+        } catch (error) {
+          bridgeStateNode.textContent = "error";
+          appendLog(error.message || String(error));
+          setState("error");
+          if (polling && !options.single) {
+            timer = setTimeout(() => tick(), 2500);
+          }
+        }
+      }
+
+      async function postResult(message) {
+        const bridgeUrl = getBridgeUrl();
+        const jobId = message.jobId || (currentJob && currentJob.id);
+        if (!jobId) {
+          appendLog("Cannot post result without job id");
+          return;
+        }
+
+        const body = {
+          status: message.status,
+          result: message.result || null,
+          error: message.error || null,
+          logs: message.logs || []
+        };
+
+        const response = await fetch(`${bridgeUrl}/api/figma-bridge/jobs/${jobId}/result`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          appendLog(`Failed to post result for ${jobId}: HTTP ${response.status}`);
+          return;
+        }
+
+        appendLog(`${jobId} ${message.status}`);
+        if (message.error && message.error.message) {
+          appendLog(message.error.message);
+        }
+        setState(message.status);
+      }
+
+      function getBridgeUrl() {
+        const value = bridgeInput.value.trim().replace(/\/+$/, "");
+        localStorage.setItem("bridgeUrl", value);
+        return value;
+      }
+
+      function setState(value) {
+        stateNode.textContent = value;
+      }
+
+      function appendLog(line) {
+        const time = new Date().toLocaleTimeString();
+        logNode.textContent = `${time} ${line}\n${logNode.textContent}`;
+      }
+    </script>
+  </body>
+</html>

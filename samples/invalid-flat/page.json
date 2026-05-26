@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "activity-page.v0.1",
+  "name": "Invalid Flat Image",
+  "canvas": {
+    "width": 750,
+    "height": 1600,
+    "background": "#FFFFFF",
+    "sourceImage": "source/flat.png"
+  },
+  "metadata": {
+    "id": "invalid-flat",
+    "importMode": "flat-source-image",
+    "recognitionComplete": true,
+    "recognitionApplied": {
+      "policy": "flat-image-import"
+    }
+  },
+  "sections": [
+    {
+      "id": "full_image_section",
+      "type": "section",
+      "x": 0,
+      "y": 0,
+      "width": 750,
+      "height": 1600,
+      "children": [
+        {
+          "id": "source_image",
+          "type": "image",
+          "asset": "source/flat.png",
+          "x": 0,
+          "y": 0,
+          "width": 750,
+          "height": 1600,
+          "fit": "cover"
+        }
+      ]
+    }
+  ]
+}
