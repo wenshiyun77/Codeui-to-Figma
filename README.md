@@ -85,8 +85,14 @@ npm run bridge:uninstall-service
 Logs are written to:
 
 ```text
-var/bridge/launchd.out.log
-var/bridge/launchd.err.log
+~/Library/Logs/CodeUi-to-Figma/bridge.out.log
+~/Library/Logs/CodeUi-to-Figma/bridge.err.log
+```
+
+The background service keeps its job queue outside the repository at:
+
+```text
+~/Library/Application Support/CodeUi-to-Figma/bridge
 ```
 
 ## Manual Development Run
@@ -291,7 +297,7 @@ python3 skills/codeui-to-figma/scripts/submit_activity_page.py var/generated/qix
 npm run reset:bridge
 ```
 
-When the Bridge service is running, this command now clears the live in-memory queue through the Bridge reset API. If the Bridge is stopped, it falls back to removing `var/bridge/jobs.json`.
+When the Bridge service is running, this command now clears the live in-memory queue through the Bridge reset API. If the Bridge is stopped, it falls back to removing the local `jobs.json` file from `BRIDGE_DATA_DIR`, or `var/bridge/jobs.json` when that environment variable is not set.
 
 ## Current Scope
 

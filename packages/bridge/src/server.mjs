@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const PORT = Number.parseInt(process.env.BRIDGE_PORT || "39217", 10);
 const HOST = process.env.BRIDGE_HOST || "localhost";
 const ROOT_DIR = resolve(process.cwd());
-const DATA_DIR = resolve(ROOT_DIR, "var/bridge");
+const DATA_DIR = resolve(process.env.BRIDGE_DATA_DIR || resolve(ROOT_DIR, "var/bridge"));
 const JOBS_FILE = resolve(DATA_DIR, "jobs.json");
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 const ALLOWED_ASSET_ROOTS = [ROOT_DIR, resolve("/private/tmp"), resolve("/tmp")];

@@ -8,6 +8,8 @@ LEGACY_LABEL="com.codex.figma-activity-bridge"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LEGACY_PLIST="$HOME/Library/LaunchAgents/$LEGACY_LABEL.plist"
 NPM_PATH="$(command -v npm)"
+DATA_DIR="$HOME/Library/Application Support/CodeUi-to-Figma/bridge"
+LOG_DIR="$HOME/Library/Logs/CodeUi-to-Figma"
 
 if [[ ! -x "$NPM_PATH" ]]; then
   echo "npm was not found in PATH. Install Node.js first."
@@ -15,7 +17,8 @@ if [[ ! -x "$NPM_PATH" ]]; then
 fi
 
 mkdir -p "$HOME/Library/LaunchAgents"
-mkdir -p "$PROJECT_DIR/var/bridge"
+mkdir -p "$DATA_DIR"
+mkdir -p "$LOG_DIR"
 
 cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -35,9 +38,9 @@ cat > "$PLIST" <<EOF
   <key>KeepAlive</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>$PROJECT_DIR/var/bridge/launchd.out.log</string>
+  <string>$LOG_DIR/bridge.out.log</string>
   <key>StandardErrorPath</key>
-  <string>$PROJECT_DIR/var/bridge/launchd.err.log</string>
+  <string>$LOG_DIR/bridge.err.log</string>
   <key>WorkingDirectory</key>
   <string>$PROJECT_DIR</string>
   <key>EnvironmentVariables</key>
@@ -46,6 +49,8 @@ cat > "$PLIST" <<EOF
     <string>localhost</string>
     <key>BRIDGE_PORT</key>
     <string>39217</string>
+    <key>BRIDGE_DATA_DIR</key>
+    <string>$DATA_DIR</string>
   </dict>
 </dict>
 </plist>
@@ -57,6 +62,8 @@ launchctl load "$PLIST"
 
 echo "Installed and started $LABEL"
 echo "Bridge URL: http://localhost:39217"
+echo "Data:"
+echo "  $DATA_DIR"
 echo "Logs:"
-echo "  $PROJECT_DIR/var/bridge/launchd.out.log"
-echo "  $PROJECT_DIR/var/bridge/launchd.err.log"
+echo "  $LOG_DIR/bridge.out.log"
+echo "  $LOG_DIR/bridge.err.log"

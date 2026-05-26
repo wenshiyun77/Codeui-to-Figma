@@ -3,7 +3,8 @@ import { resolve } from "node:path";
 
 const args = process.argv.slice(2);
 const bridgeUrl = getArg("--bridge-url") || "http://localhost:39217";
-const jobsFile = resolve(process.cwd(), "var/bridge/jobs.json");
+const dataDir = resolve(process.env.BRIDGE_DATA_DIR || resolve(process.cwd(), "var/bridge"));
+const jobsFile = resolve(dataDir, "jobs.json");
 
 try {
   const response = await fetch(`${bridgeUrl}/api/figma-bridge/jobs/reset`, {
