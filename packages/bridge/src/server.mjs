@@ -4,6 +4,7 @@ import { extname, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import http from "node:http";
 import { fileURLToPath } from "node:url";
+import { clampBbox, cropRgba, decodePng, encodePng } from "./png-utils.mjs";
 
 const PORT = Number.parseInt(process.env.BRIDGE_PORT || "39217", 10);
 const HOST = process.env.BRIDGE_HOST || "localhost";
@@ -248,7 +249,9 @@ async function createImageAnnotationHandoff(body) {
   const packageName = `manual-${timestamp()}-${sourceName}`;
   const packageDir = resolve(DATA_DIR, "packages", packageName);
   const sourceDir = resolve(packageDir, "source");
+  const backgroundsDir = resolve(packageDir, "assets/backgrounds");
   await mkdir(sourceDir, { recursive: true });
+  await mkdir(backgroundsDir, { recursive: true });
 
   const sourceRelativePath = `source/image2-screen.${image.extension}`;
   const sourcePath = resolve(packageDir, sourceRelativePath);
@@ -257,13 +260,20 @@ async function createImageAnnotationHandoff(body) {
   const canvas = annotations.canvas || {};
   const width = Number(canvas.width || 750);
   const height = Number(canvas.height || 0);
+  const scaffold = await buildManualScaffold({
+    image,
+    annotations,
+    width,
+    height,
+    backgroundsDir
+  });
   const page = {
     schemaVersion: "activity-page.v0.1",
     name: body.name || sourceName || "CodeUi Manual Annotation",
     canvas: {
       width,
       height,
-      background: "#FFFFFF",
+      background: scaffold.background,
       sourceImage: sourceRelativePath
     },
     metadata: {
@@ -280,9 +290,10 @@ async function createImageAnnotationHandoff(body) {
         targetWidth: 750,
         coordinateSystem: "All bboxes are normalized to a 750px-wide canvas."
       },
-      recognitionWorkflow: annotations.recognitionWorkflow || defaultRecognitionWorkflow()
+      recognitionWorkflow: annotations.recognitionWorkflow || defaultRecognitionWorkflow(),
+      scaffold: scaffold.metadata
     },
-    sections: []
+    sections: scaffold.sections
   };
   const pagePath = resolve(packageDir, "page.json");
   await writeFile(pagePath, JSON.stringify(page, null, 2));
@@ -298,6 +309,161 @@ async function createImageAnnotationHandoff(body) {
     packageDir,
     annotations: normalizedAnnotations
   });
+}
+
+async function buildManualScaffold({ image, annotations, width, height, backgroundsDir }) {
+  let decoded = null;
+  try {
+    if (image.extension === "png") {
+      decoded = decodePng(image.bytes);
+    }
+  } catch {
+    decoded = null;
+  }
+
+  const normalizedWidth = positiveNumber(width, decoded ? decoded.width : 750);
+  const normalizedHeight = positiveNumber(
+    height,
+    decoded ? Math.round(decoded.height * (normalizedWidth / decoded.width)) : 1
+  );
+  const boundaries = buildScaffoldBoundaries(annotations.regions, normalizedHeight);
+  const sections = [];
+  const scaleX = decoded ? decoded.width / normalizedWidth : 1;
+  const scaleY = decoded ? decoded.height / normalizedHeight : 1;
+
+  for (let index = 0; index < boundaries.length - 1; index += 1) {
+    const y = boundaries[index];
+    const nextY = boundaries[index + 1];
+    const sectionHeight = nextY - y;
+    const label = String(index + 1).padStart(2, "0");
+    const children = [];
+
+    if (decoded) {
+      const asset = `assets/backgrounds/scaffold-section-${label}-bg.png`;
+      const cropBox = clampBbox({
+        x: 0,
+        y: Math.round(y * scaleY),
+        width: Math.round(normalizedWidth * scaleX),
+        height: Math.round(sectionHeight * scaleY)
+      }, decoded);
+      const crop = cropRgba(decoded, cropBox.x, cropBox.y, cropBox.width, cropBox.height);
+      await writeFile(resolve(backgroundsDir, `scaffold-section-${label}-bg.png`), encodePng(crop));
+      children.push({
+        id: `section_${label}_scaffold_bg`,
+        type: "backgroundImage",
+        asset,
+        x: 0,
+        y: 0,
+        width: normalizedWidth,
+        height: sectionHeight,
+        fit: "cover",
+        recognition: {
+          scaffold: true,
+          reason: "Baseline source-image crop generated so apply:recognition has stable target sections."
+        }
+      });
+    }
+
+    sections.push({
+      id: `section_${label}`,
+      type: "section",
+      name: `Section ${label}`,
+      x: 0,
+      y,
+      width: normalizedWidth,
+      height: sectionHeight,
+      children
+    });
+  }
+
+  return {
+    background: decoded ? samplePageBackground(decoded) : "#FFFFFF",
+    sections,
+    metadata: {
+      generatedFrom: "manual-annotations-handoff",
+      sectionCount: sections.length,
+      hasBackgroundAssets: Boolean(decoded),
+      reason: "Manual handoff packages must contain base sections before Codex recognition is applied."
+    }
+  };
+}
+
+function buildScaffoldBoundaries(regions, height) {
+  const boundaries = new Set([0, Math.max(1, Math.round(height))]);
+  const candidates = Array.isArray(regions)
+    ? regions.filter((region) => region && region.bbox && region.role !== "ignore")
+    : [];
+
+  for (const region of candidates) {
+    const y = clampRange(Math.round(region.bbox.y || 0), 0, height);
+    const bottom = clampRange(Math.round((region.bbox.y || 0) + (region.bbox.height || 0)), 0, height);
+    if (bottom > y) {
+      boundaries.add(y);
+      boundaries.add(bottom);
+    }
+  }
+
+  const sorted = [...boundaries].sort((a, b) => a - b);
+  const merged = [sorted[0]];
+  for (const value of sorted.slice(1)) {
+    if (value - merged[merged.length - 1] < 24 && value !== height) {
+      continue;
+    }
+    merged.push(value);
+  }
+  if (merged[merged.length - 1] !== height) {
+    merged.push(height);
+  }
+  return merged.length > 1 ? merged : [0, height];
+}
+
+function samplePageBackground(image) {
+  const samples = [];
+  const patch = Math.max(4, Math.min(24, Math.round(Math.min(image.width, image.height) * 0.025)));
+  samples.push(samplePatch(image, 0, 0, patch, patch));
+  samples.push(samplePatch(image, image.width - patch, 0, patch, patch));
+  samples.push(samplePatch(image, 0, image.height - patch, patch, patch));
+  samples.push(samplePatch(image, image.width - patch, image.height - patch, patch, patch));
+  const avg = samples.reduce((acc, color) => ({
+    r: acc.r + color.r,
+    g: acc.g + color.g,
+    b: acc.b + color.b
+  }), { r: 0, g: 0, b: 0 });
+  return rgbToHex(
+    Math.round(avg.r / samples.length),
+    Math.round(avg.g / samples.length),
+    Math.round(avg.b / samples.length)
+  );
+}
+
+function samplePatch(image, startX, startY, width, height) {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let count = 0;
+  for (let y = Math.max(0, startY); y < Math.min(image.height, startY + height); y += 1) {
+    for (let x = Math.max(0, startX); x < Math.min(image.width, startX + width); x += 1) {
+      const offset = (y * image.width + x) * 4;
+      r += image.data[offset];
+      g += image.data[offset + 1];
+      b += image.data[offset + 2];
+      count += 1;
+    }
+  }
+  return count ? { r: r / count, g: g / count, b: b / count } : { r: 255, g: 255, b: 255 };
+}
+
+function rgbToHex(r, g, b) {
+  return `#${[r, g, b].map((value) => clampRange(value, 0, 255).toString(16).padStart(2, "0")).join("").toUpperCase()}`;
+}
+
+function positiveNumber(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function clampRange(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 async function readAnnotationWorkbench(req, url) {
