@@ -45,9 +45,9 @@ var/generated/example-page/
 10. Codex 按顺序执行：750px 归一化、识别底色、去除手机系统条、先识别文字、再分离 Tab/按钮/图标/艺术字/前景透明素材、最后处理头图和区域背景。
 11. Codex 写入 `recognition.json` 和 `remove-background-tasks.json`。
 12. 对于 `artText`、`icon` 和 `foreground`，必须用 image2 去背景生成透明 PNG，不能用本地代码抠图代替。
-13. Codex 运行 `apply:recognition`，把识别结果写回 `page.json`。
-14. Codex 运行 `validate:page`。不通过则继续修复，不能提交 Figma。
-15. Codex 提交 Bridge job。
+13. Codex 运行 `handoff:continue`，把识别结果写回 `page.json`，自动准备 image2 去背景任务，并在素材完整时继续校验和提交。
+14. 如果 `handoff:continue` 返回 `waiting_for_image2_cutouts`，说明只缺 image2 透明 PNG；必须用 image2 生成后放回指定目标路径，再重新运行同一条命令。
+15. 校验通过后，`handoff:continue` 自动提交 Bridge job。
 16. Figma 插件的 `导入轮询` 领取任务，在 Figma 画布中重建页面并隐藏原图。
 17. Figma 插件把结果回传 Bridge。
 

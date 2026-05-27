@@ -23,7 +23,7 @@ Recognition is Codex-driven, not API-driven. Do not call the OpenAI API for reco
 6. For complex pages, prepare or read `analysis/manual-annotations.json` first. Manual boxes and notes are higher-priority constraints than free recognition.
 7. Use Codex vision directly to fill `analysis/recognition.json` and `analysis/remove-background-tasks.json`.
 8. Use image2 background removal for every foreground or art-text transparent cutout listed by recognition or manual annotations.
-9. Run `npm run apply:recognition` and submit only after `page.json` has `metadata.recognitionComplete: true`.
+9. Run `npm run handoff:continue -- --package-dir <package-dir>`. It applies recognition, prepares image2 cutout tasks when needed, validates the page, and submits to Bridge only when the package is complete.
 10. Wait for the job result when the user expects Figma to update immediately.
 
 Hard rule: never submit or import a parser-only baseline package as the final result. Baseline section slicing is blocked by the submit scripts and by the Figma plugin because it does not satisfy the element-layered reconstruction requirement.
@@ -72,7 +72,7 @@ npm run parse:image -- --input /absolute/path/image2-screen.png --prompt "<user 
 
 Parser v0.1 slices the flat PNG into section background images and writes `activity-page.v0.1`. This is only a baseline package and must not be treated as a recognized reconstruction.
 
-Do not submit this output directly. It must go through Codex recognition, image2 cutout generation, and `apply:recognition` first.
+Do not submit this output directly. It must go through Codex recognition, image2 cutout generation, and `handoff:continue` first.
 
 ## Manual Annotation Constraints
 
@@ -142,19 +142,13 @@ Also identify simple rectangular UI as `shapeCandidates`: panels, ranking rows, 
 
 For tab controls, always distinguish the tab group background from the selected state. If a `tabGroup` or `selectedTab` annotation exists, make sure the selected state becomes its own shape layer.
 
-After Codex fills recognition files, apply them back into `page.json`:
+After Codex fills recognition files, continue the package:
 
 ```bash
-npm run apply:recognition -- --package-dir var/generated/parsed-page
+npm run handoff:continue -- --package-dir var/generated/parsed-page
 ```
 
-Then submit:
-
-```bash
-python3 scripts/submit_activity_page.py /absolute/path/to/var/generated/parsed-page/page.json --wait
-```
-
-If `apply:recognition` reports pending foreground or text-image assets, finish those image2 background-removal assets first and rerun `apply:recognition`. Submission is blocked until recognition is complete.
+If `handoff:continue` reports `waiting_for_image2_cutouts`, finish those image2 background-removal assets first and rerun the same command. Submission is blocked until recognition is complete.
 
 Do not call OpenAI API from scripts. The required recognition model is controlled by the Codex client/session. If the user requires `gpt-5.5`, verify the Codex session is actually using `gpt-5.5`; if it is not, stop and ask the user to switch models. Code cannot force the Codex runtime model.
 

@@ -286,19 +286,13 @@ Recognition must list the visible page elements, not only long background slices
 - module-level background regions that should stay as background slices
 - tab group backgrounds and selected tab states as separate shapes when annotated
 
-After Codex fills recognition files, apply them back into `page.json`:
+After Codex fills recognition files, continue the handoff:
 
 ```bash
-npm run apply:recognition -- --package-dir var/generated/qixi-parsed
+npm run handoff:continue -- --package-dir var/generated/qixi-parsed
 ```
 
-If `apply:recognition` reports pending text-image or foreground assets, create those clean transparent assets with image2 background removal and rerun the command. Submission remains blocked until `metadata.recognitionComplete` is `true`.
-
-Then submit the recognized package:
-
-```bash
-python3 skills/codeui-to-figma/scripts/submit_activity_page.py var/generated/qixi-parsed/page.json --wait
-```
+If `handoff:continue` reports `waiting_for_image2_cutouts`, create those clean transparent assets with image2 background removal and rerun the same command. When `metadata.recognitionComplete` is `true`, the command validates and submits the recognized package to the Bridge automatically.
 
 ## Reset Local Jobs
 

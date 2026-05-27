@@ -60,7 +60,7 @@ export function assertPageReadyForSubmit(pageDocument, sourcePath) {
     throwQualityError(sourcePath, [
       "unrecognized baseline package",
       "The page only contains coarse image scaffolding.",
-      "Run recognize:prepare, fill analysis/recognition.json with Codex, create required image2 transparent assets, run apply:recognition, then submit again."
+      "Run recognize:prepare, fill analysis/recognition.json with Codex, create required image2 transparent assets, then run handoff:continue again."
     ]);
   }
 
@@ -68,7 +68,7 @@ export function assertPageReadyForSubmit(pageDocument, sourcePath) {
     throwQualityError(sourcePath, [
       "incomplete recognition package",
       "Some recognized text-image or foreground cutout assets are still pending.",
-      "Finish the image2 background-removal assets and rerun apply:recognition before submitting."
+      "Finish the image2 background-removal assets and rerun handoff:continue before submitting."
     ]);
   }
 
@@ -76,7 +76,7 @@ export function assertPageReadyForSubmit(pageDocument, sourcePath) {
     throwQualityError(sourcePath, [
       "missing image2 foreground layers",
       "Recognition identified foreground or art-text assets, but no clean image2 foreground layer is present.",
-      "Create the required transparent assets with image2 background removal and rerun apply:recognition."
+      "Create the required transparent assets with image2 background removal and rerun handoff:continue."
     ]);
   }
 

@@ -547,9 +547,7 @@ async function createCodexHandoff(body) {
     nextAction: "Codex must read source image plus every manual-annotations.json region, including the full instruction/备注 text and any nested region.elements reference boxes, then update recognition.json and remove-background-tasks.json. Do not call OpenAI API from scripts. Do not let the workbench perform semantic recognition.",
     transparentCutoutPolicy: "All artText and foreground transparent PNG assets must be produced by image2 background removal. Local code may crop rectangular backgrounds only; it must not fake transparent cutouts with canvas, thresholding, masks, OpenCV, or Pillow.",
     afterCodexRecognition: [
-      `npm run apply:recognition -- --package-dir "${saved.packageDir}"`,
-      `npm run validate:page -- "${pagePath}"`,
-      `node packages/bridge/src/submit-page.mjs "${pagePath}"`
+      `npm run handoff:continue -- --package-dir "${saved.packageDir}"`
     ],
     regionCount: saved.regionCount
   };
@@ -589,8 +587,9 @@ function buildHandoffMarkdown(handoff) {
     "5. 先处理文字：识别文本内容、字体、字号、字重、颜色、坐标和尺寸，并写入 editableText。",
     "6. 再分离 Tab、按钮、图标、艺术字和前景素材；所有透明 PNG/WebP 必须由 image2 去背景生成，不要用本地抠图代替。",
     "7. 完整头图默认保持一整张图；之后再处理区域背景和模块背景。",
-    "8. 补全 recognition.json 和 remove-background-tasks.json，运行 apply:recognition 和 validate:page。",
-    "9. 校验通过后提交到 Figma Bridge；Figma 拼接时隐藏原图，所有元素必须按正确位置和尺寸覆盖源图。",
+    "8. 补全 recognition.json 和 remove-background-tasks.json，然后运行 handoff:continue；这个命令会自动应用识别、准备 image2 任务、校验，并在完整时提交到 Figma Bridge。",
+    "9. 如果 handoff:continue 显示 waiting_for_image2_cutouts，必须先用 image2 生成透明 PNG 并放回目标路径，再重新运行同一条命令；不能用本地假抠图绕过。",
+    "10. 校验通过后自动提交到 Figma Bridge；Figma 拼接时隐藏原图，所有元素必须按正确位置和尺寸覆盖源图。",
     "",
     "## 后续命令",
     "",

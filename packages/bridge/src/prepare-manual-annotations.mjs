@@ -82,9 +82,7 @@ function buildAnnotatorHtml({ annotations, annotationsFile, imagePath, packageDi
   const data = escapeScriptJson(JSON.stringify(annotations, null, 2));
   const packageDirJson = escapeScriptJson(JSON.stringify(rootDir));
   const handoffInstruction = "回到 Codex 对话输入：继续识别这个标注 handoff";
-  const applyCommand = `npm run apply:recognition -- --package-dir "${rootDir}"`;
-  const validateCommand = `npm run validate:page -- "${targetPagePath}"`;
-  const submitCommand = `node packages/bridge/src/submit-page.mjs "${targetPagePath}"`;
+  const continueCommand = `npm run handoff:continue -- --package-dir "${rootDir}"`;
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -254,7 +252,7 @@ function buildAnnotatorHtml({ annotations, annotationsFile, imagePath, packageDi
       </div>
       <p class="small">推荐使用“保存并交给 Codex”。它会把标注写回本地 JSON，并生成 codex-handoff.json / .md。回到 Codex 后输入继续，Codex 会读取 handoff 执行元素分离、文字识别和 image2 去背景任务规划。下载 JSON 只是兜底导出。</p>
       <div id="bridgeStatus" class="small"></div>
-      <div class="cmd" id="commands">${escapeHtml(handoffInstruction)}\n${escapeHtml(applyCommand)}\n${escapeHtml(validateCommand)}\n${escapeHtml(submitCommand)}</div>
+      <div class="cmd" id="commands">${escapeHtml(handoffInstruction)}\n${escapeHtml(continueCommand)}</div>
       <div class="sectionTitle"><h2>JSON 预览</h2></div>
       <pre id="json"></pre>
     </aside>

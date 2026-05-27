@@ -9,6 +9,7 @@ const sourcePath = resolve("packages/bridge/src/prepare-manual-annotations.mjs")
 const pluginPath = resolve("packages/plugin/code.js");
 const pluginUiPath = resolve("packages/plugin/ui.html");
 const serverPath = resolve("packages/bridge/src/server.mjs");
+const packagePath = resolve("package.json");
 let tempRoot = null;
 
 try {
@@ -18,8 +19,10 @@ try {
   const plugin = await readFile(pluginPath, "utf8");
   const pluginUi = await readFile(pluginUiPath, "utf8");
   const server = await readFile(serverPath, "utf8");
+  const packageJson = await readFile(packagePath, "utf8");
 
   assertContains(plugin, "CodeUi-to-Figma", "Figma plugin uses project display name");
+  assertContains(plugin, "codeui.handoff.status", "Figma plugin handles handoff status jobs");
   assertContains(plugin, "添加 UI 图", "Figma plugin embeds the full annotation UI");
   assertContains(plugin, "data-resize", "Figma plugin exposes internal resize handles");
   assertContains(source, "/api/figma-bridge/annotations/handoff", "source uses handoff endpoint");
@@ -35,7 +38,10 @@ try {
   assertContains(pluginUi, "页面会按 750px 宽度等比记录坐标", "Figma plugin explains 750px normalization");
   assertContains(server, "buildManualScaffold", "Bridge creates section scaffold for direct image handoffs");
   assertContains(server, "sections: scaffold.sections", "Bridge handoff page.json must not start with empty sections");
+  assertContains(server, "handoff:continue", "Bridge handoff points Codex to the automatic continuation command");
+  assertContains(packageJson, "\"handoff:continue\"", "npm scripts expose automatic handoff continuation");
   assertContains(html, "保存并交给 Codex", "generated HTML exposes Codex handoff button");
+  assertContains(html, "handoff:continue", "generated HTML exposes automatic handoff continuation command");
   assertContains(html, "备注", "generated HTML exposes instruction/备注 field");
   assertContains(pluginUi, "备注", "Figma plugin exposes required instruction/备注 handling");
   assertContains(html, "建议填写备注", "generated HTML warns when region instructions are missing");

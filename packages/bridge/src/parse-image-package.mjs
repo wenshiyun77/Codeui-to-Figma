@@ -34,7 +34,7 @@ console.log(`sections: ${boundaries.length - 1}`);
 
 if (shouldSubmit) {
   throw new Error(
-    "Refusing to submit baseline section slices. Run recognize:prepare, fill recognition.json with Codex, create required image2 transparent assets, run apply:recognition, then submit page.json."
+    "Refusing to submit baseline section slices. Run recognize:prepare, fill recognition.json with Codex, create required image2 transparent assets, then run handoff:continue."
   );
 }
 

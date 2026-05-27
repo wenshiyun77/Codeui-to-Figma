@@ -47,6 +47,10 @@ figma.ui.onmessage = async (message) => {
 };
 
 async function executeJob(job, logs, warnings) {
+  if (job && job.type === "codeui.handoff.status") {
+    return executeHandoffStatusJob(job, logs);
+  }
+
   if (!job || job.type !== "figma.activityPage.import") {
     throw new Error(`Unsupported job type: ${job && job.type}`);
   }
@@ -99,6 +103,21 @@ async function executeJob(job, logs, warnings) {
     rootFrameId: root.id,
     nodeIds: registry,
     warnings
+  };
+}
+
+function executeHandoffStatusJob(job, logs) {
+  const status = job.payload || {};
+  const message = status.message || "CodeUi-to-Figma handoff 状态已更新。";
+  logs.push(message);
+  figma.notify(message, { timeout: 8000 });
+  return {
+    handoffStatus: status.status || "unknown",
+    packageDir: status.packageDir || null,
+    statusPath: status.statusPath || null,
+    pendingCount: numberOr(status.pendingCount, 0),
+    image2TasksMarkdown: status.image2TasksMarkdown || null,
+    submittedJobId: status.submittedJobId || null
   };
 }
 

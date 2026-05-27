@@ -69,7 +69,7 @@ function buildMarkdown(manifestData) {
     "2. Apply the prompt exactly.",
     "3. Save the clean transparent PNG to `suggestedImage2Output` first.",
     "4. Copy the final approved PNG to `finalTargetAsset` inside the package.",
-    "5. Rerun `npm run apply:recognition -- --package-dir <package-dir>` and then `npm run validate:page -- <package-dir>/page.json`.",
+    "5. Rerun `npm run handoff:continue -- --package-dir <package-dir>`. It will apply recognition, validate, and submit to the Figma Bridge when all image2 assets exist.",
     ""
   ];
 
