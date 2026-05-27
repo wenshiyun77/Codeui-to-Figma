@@ -18,7 +18,8 @@ try {
   const pluginUi = await readFile(pluginUiPath, "utf8");
 
   assertContains(plugin, "CodeUi-to-Figma", "Figma plugin uses project display name");
-  assertContains(plugin, "typeof __html__", "Figma plugin uses manifest ui.html as primary UI");
+  assertContains(plugin, "添加 UI 图", "Figma plugin embeds the full annotation UI");
+  assertContains(plugin, "data-resize", "Figma plugin exposes internal resize handles");
   assertContains(source, "/api/figma-bridge/annotations/handoff", "source uses handoff endpoint");
   assertContains(html, "/api/figma-bridge/annotations/handoff", "generated HTML uses handoff endpoint");
   assertContains(pluginUi, "/api/figma-bridge/annotations/handoff-from-image", "Figma plugin can create handoff directly from an uploaded image");
