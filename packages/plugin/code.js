@@ -128,6 +128,10 @@ const UI_HTML = [
 ].join("\n");
 
 function buildPluginUiHtml() {
+  if (typeof __html__ === "string") {
+    return __html__;
+  }
+  return UI_HTML;
   return String.raw`<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -579,11 +583,17 @@ function buildPluginUiHtml() {
 }
 
 figma.showUI(buildPluginUiHtml(), {
-  width: 980,
-  height: 720
+  width: 1280,
+  height: 860,
+  themeColors: true
 });
 
 figma.ui.onmessage = async (message) => {
+  if (message && message.type === "resize-ui") {
+    figma.ui.resize(numberOr(message.width, 1280), numberOr(message.height, 860));
+    return;
+  }
+
   if (!message || message.type !== "execute-job") {
     return;
   }

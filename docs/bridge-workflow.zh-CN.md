@@ -33,22 +33,23 @@ var/generated/example-page/
 
 ## 标准流程
 
-1. Codex 生成或接收 image2 输出图，并创建 page package。
-2. Codex 运行解析脚本，得到临时 `page.json` 和源图引用。
-3. 用户打开 Figma 插件 `CodeUi-to-Figma`。
-4. 用户进入 `标注工作台`，填写 package 绝对路径，点击 `加载源图`。
-5. 用户在 Figma 插件里框选区域、选择区域类型、填写中文备注。
-6. 用户点击 `保存并交给 Codex`。
-7. Bridge 写入 `analysis/manual-annotations.json`，同时生成 `codex-handoff.json` 和 `codex-handoff.md`。
+1. Codex 生成或接收 image2 输出图。
+2. 用户打开 Figma 插件 `CodeUi-to-Figma`。
+3. 用户进入 `标注工作台`，拖拽或选择 UI 图。
+4. 插件按 750px 页面宽度等比归一化坐标。
+5. 用户通过右侧图层卡片新增框选区域、选择区域类型、填写中文备注。
+6. 用户点击 `保存并提交给 Codex`。
+7. Bridge 在运行数据目录创建 page package，写入 `page.json`、`source/image2-screen.*`、`analysis/manual-annotations.json`、`codex-handoff.json` 和 `codex-handoff.md`。
 8. 用户回到 Codex 输入：`继续识别这个标注 handoff`。
 9. Codex 读取 handoff、源图和人工标注，完整阅读每个区域的备注。
-10. Codex 写入 `recognition.json` 和 `remove-background-tasks.json`。
-11. 对于 `artText` 和 `foreground`，必须用 image2 去背景生成透明 PNG，不能用本地代码抠图代替。
-12. Codex 运行 `apply:recognition`，把识别结果写回 `page.json`。
-13. Codex 运行 `validate:page`。不通过则继续修复，不能提交 Figma。
-14. Codex 提交 Bridge job。
-15. Figma 插件的 `导入轮询` 领取任务，在 Figma 画布中重建页面。
-16. Figma 插件把结果回传 Bridge。
+10. Codex 按顺序执行：750px 归一化、识别底色、去除手机系统条、先识别文字、再分离 Tab/按钮/图标/艺术字/前景透明素材、最后处理头图和区域背景。
+11. Codex 写入 `recognition.json` 和 `remove-background-tasks.json`。
+12. 对于 `artText`、`icon` 和 `foreground`，必须用 image2 去背景生成透明 PNG，不能用本地代码抠图代替。
+13. Codex 运行 `apply:recognition`，把识别结果写回 `page.json`。
+14. Codex 运行 `validate:page`。不通过则继续修复，不能提交 Figma。
+15. Codex 提交 Bridge job。
+16. Figma 插件的 `导入轮询` 领取任务，在 Figma 画布中重建页面并隐藏原图。
+17. Figma 插件把结果回传 Bridge。
 
 ## 标注规则
 

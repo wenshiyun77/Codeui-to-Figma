@@ -1,298 +1,661 @@
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }
-
-      body {
-        margin: 0;
-        background: var(--figma-color-bg);
-        color: var(--figma-color-text);
-        font-size: 12px;
-      }
-
-      main {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        padding: 16px;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: 15px;
-        line-height: 20px;
-        font-weight: 650;
-      }
-
-      label {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        color: var(--figma-color-text-secondary);
-      }
-
-      input {
-        height: 32px;
-        border: 1px solid var(--figma-color-border);
-        border-radius: 6px;
-        background: var(--figma-color-bg);
-        color: var(--figma-color-text);
-        padding: 0 10px;
-        font: inherit;
-      }
-
-      .row {
-        display: flex;
-        gap: 8px;
-      }
-
-      button {
-        height: 32px;
-        border: 1px solid var(--figma-color-border);
-        border-radius: 6px;
-        background: var(--figma-color-bg-brand);
-        color: var(--figma-color-text-onbrand);
-        padding: 0 12px;
-        font: inherit;
-        font-weight: 600;
-      }
-
-      button.secondary {
-        background: var(--figma-color-bg);
-        color: var(--figma-color-text);
-      }
-
-      button:disabled {
-        opacity: 0.5;
-      }
-
-      .status {
-        display: grid;
-        grid-template-columns: 80px 1fr;
-        gap: 6px 10px;
-        border: 1px solid var(--figma-color-border);
-        border-radius: 8px;
-        padding: 12px;
-      }
-
-      .status span:nth-child(odd) {
-        color: var(--figma-color-text-secondary);
-      }
-
-      pre {
-        min-height: 180px;
-        max-height: 220px;
-        overflow: auto;
-        margin: 0;
-        border: 1px solid var(--figma-color-border);
-        border-radius: 8px;
-        padding: 10px;
-        background: var(--figma-color-bg-secondary);
-        color: var(--figma-color-text);
-        white-space: pre-wrap;
-      }
-    </style>
-  </head>
-  <body>
-    <main>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --line: #d8dde6;
+      --ink: #1f2328;
+      --muted: #6b7280;
+      --blue: #1677ff;
+      --danger: #b42318;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-size: 12px; overflow: hidden; }
+    button, input, select, textarea { font: inherit; }
+    button {
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--blue);
+      color: #fff;
+      padding: 0 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button.secondary { background: #fff; color: var(--ink); }
+    button.ghost { background: transparent; color: var(--ink); }
+    button.danger { background: #fee4e2; color: var(--danger); }
+    button:disabled { opacity: .45; cursor: default; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      padding: 7px 9px;
+    }
+    textarea { min-height: 64px; resize: vertical; line-height: 1.45; }
+    label { display: block; margin: 0 0 5px; color: #565f6b; font-weight: 700; }
+    header {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 { margin: 0; font-size: 15px; line-height: 20px; }
+    .tabs { display: flex; gap: 6px; }
+    .tab { background: #f0f2f5; color: var(--ink); }
+    .tab.active { background: var(--blue); color: #fff; }
+    .view { display: none; }
+    .view.active { display: block; }
+    #importView { padding: 14px; }
+    .bridgeRow { display: grid; grid-template-columns: 110px minmax(240px, 1fr) auto auto auto; gap: 8px; align-items: end; margin-bottom: 12px; }
+    .status { display: grid; grid-template-columns: 80px 1fr; gap: 6px 10px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; max-width: 420px; }
+    .status span:nth-child(odd), .small { color: var(--muted); }
+    pre { margin: 0; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fff; color: var(--ink); white-space: pre-wrap; overflow: auto; }
+    #log { min-height: 260px; max-height: 360px; }
+    #annotateView.active { height: calc(100vh - 52px); }
+    .annotateLayout {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      min-height: 0;
+    }
+    .canvasPane { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
+    .canvasToolbar {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .canvasToolbar select { width: 118px; }
+    .sourceName { min-width: 0; flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .canvasViewport {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      background: #e8eaee;
+      padding: 12px;
+      position: relative;
+    }
+    .dropEmpty {
+      min-height: 100%;
+      border: 1px dashed #aeb6c4;
+      border-radius: 12px;
+      background: rgba(255,255,255,.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .stage {
+      position: relative;
+      width: fit-content;
+      background: #fff;
+      box-shadow: 0 10px 34px rgba(0,0,0,.18);
+      transform-origin: top left;
+    }
+    #sourceImage { display: none; user-select: none; pointer-events: none; }
+    #overlay { display: none; position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+    .sidePanel { min-height: 0; overflow: auto; background: #fff; padding: 10px; }
+    .sideHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .sideHeader strong { font-size: 14px; }
+    .submit { width: 100%; margin-bottom: 10px; }
+    .layerList { display: grid; gap: 8px; }
+    .addCard {
+      border: 1px dashed #9ab8ef;
+      border-radius: 10px;
+      padding: 12px;
+      background: #f4f8ff;
+      color: #155eef;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+    }
+    .layerCard {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 9px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .layerCard.active { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(22,119,255,.14); }
+    .layerTop { display: grid; grid-template-columns: 12px minmax(0, 1fr) 118px 30px; gap: 7px; align-items: center; }
+    .swatch { width: 10px; height: 10px; border-radius: 50%; }
+    .layerName { height: 30px; font-weight: 700; }
+    .layerType { height: 30px; padding: 0 7px; }
+    .deleteBtn { width: 30px; height: 30px; padding: 0; }
+    .layerMeta { margin-top: 6px; color: var(--muted); font-size: 11px; }
+    .layerBody { display: none; margin-top: 8px; }
+    .layerCard.active .layerBody { display: block; }
+    .warning, .ok, .pending {
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      line-height: 1.45;
+    }
+    .warning { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+    .ok { background: #ecfdf3; color: #067647; border: 1px solid #abefc6; }
+    .pending { background: #eff6ff; color: #175cd3; border: 1px solid #b2ddff; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
       <h1>CodeUi-to-Figma</h1>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tabImport">导入轮询</button>
+      <button class="tab" id="tabAnnotate">标注工作台</button>
+    </div>
+  </header>
 
-      <label>
-        Bridge URL
-        <input id="bridgeUrl" value="http://127.0.0.1:39217" />
-      </label>
+  <section class="view active" id="importView">
+    <div class="bridgeRow">
+      <label>Bridge URL</label>
+      <input id="bridgeUrl" value="http://localhost:39217">
+      <button id="startButton">开始轮询</button>
+      <button id="onceButton" class="secondary">执行一次</button>
+      <button id="stopButton" class="secondary" disabled>停止</button>
+    </div>
+    <div class="status">
+      <span>状态</span><strong id="state">idle</strong>
+      <span>最后任务</span><strong id="lastJob">none</strong>
+      <span>Bridge</span><strong id="bridgeState">not checked</strong>
+    </div>
+    <div style="height:12px"></div>
+    <pre id="log"></pre>
+  </section>
 
-      <div class="row">
-        <button id="startButton">Start polling</button>
-        <button id="onceButton" class="secondary">Run once</button>
-        <button id="stopButton" class="secondary" disabled>Stop</button>
+  <section class="view" id="annotateView">
+    <div class="annotateLayout">
+      <div class="canvasPane">
+        <div class="canvasToolbar">
+          <button id="chooseImage">添加 UI 图</button>
+          <input id="fileInput" class="hidden" type="file" accept="image/png,image/jpeg,image/webp">
+          <label style="margin:0">预览比例</label>
+          <select id="scaleSelect">
+            <option value="fit" selected>适应宽度</option>
+            <option value="0.25">25%</option>
+            <option value="0.5">50%</option>
+            <option value="0.75">75%</option>
+            <option value="1">100%</option>
+            <option value="1.5">150%</option>
+          </select>
+          <span class="sourceName" id="sourceName">拖拽 PNG/JPG/WebP 到画布，或点击添加。</span>
+        </div>
+        <div class="canvasViewport" id="viewport">
+          <div class="dropEmpty" id="dropEmpty">
+            <div>拖拽 UI 图到这里<br>页面会按 750px 宽度等比记录坐标</div>
+          </div>
+          <div class="stage" id="stage">
+            <img id="sourceImage" alt="活动页源图">
+            <canvas id="overlay"></canvas>
+          </div>
+        </div>
       </div>
+      <aside class="sidePanel">
+        <div class="sideHeader">
+          <strong>框选图层</strong>
+          <span class="small" id="regionCount">0 个区域</span>
+        </div>
+        <button class="submit" id="saveHandoff" disabled>保存并提交给 Codex</button>
+        <div id="annotationStatus" class="small"></div>
+        <div class="layerList" id="regions"></div>
+      </aside>
+    </div>
+  </section>
 
-      <div class="status">
-        <span>State</span><strong id="state">idle</strong>
-        <span>Last job</span><strong id="lastJob">none</strong>
-        <span>Bridge</span><strong id="bridgeState">not checked</strong>
-      </div>
+  <script>
+    var bridgeInput = document.getElementById('bridgeUrl');
+    var startButton = document.getElementById('startButton');
+    var onceButton = document.getElementById('onceButton');
+    var stopButton = document.getElementById('stopButton');
+    var stateNode = document.getElementById('state');
+    var lastJobNode = document.getElementById('lastJob');
+    var bridgeStateNode = document.getElementById('bridgeState');
+    var logNode = document.getElementById('log');
+    var polling = false;
+    var busy = false;
+    var currentJob = null;
+    var timer = null;
+    bridgeInput.value = readStored('bridgeUrl') || bridgeInput.value;
 
-      <pre id="log"></pre>
-    </main>
+    bindClick(document.getElementById('tabImport'), function () { setTab('import'); });
+    bindClick(document.getElementById('tabAnnotate'), function () { setTab('annotate'); });
+    bindClick(startButton, function () { appendLog('开始轮询'); polling = true; startButton.disabled = true; stopButton.disabled = false; onceButton.disabled = true; tick(); });
+    bindClick(onceButton, function () { appendLog('执行一次'); if (!busy) tick({ single: true }); });
+    bindClick(stopButton, function () { polling = false; startButton.disabled = false; stopButton.disabled = true; onceButton.disabled = false; setState('stopped'); if (timer) { clearTimeout(timer); timer = null; } });
+    bridgeInput.onchange = function () { writeStored('bridgeUrl', bridgeInput.value.trim()); };
 
-    <script>
-      const bridgeInput = document.getElementById("bridgeUrl");
-      const startButton = document.getElementById("startButton");
-      const onceButton = document.getElementById("onceButton");
-      const stopButton = document.getElementById("stopButton");
-      const stateNode = document.getElementById("state");
-      const lastJobNode = document.getElementById("lastJob");
-      const bridgeStateNode = document.getElementById("bridgeState");
-      const logNode = document.getElementById("log");
-
-      let polling = false;
-      let busy = false;
-      let currentJob = null;
-      let timer = null;
-
-      bridgeInput.value = localStorage.getItem("bridgeUrl") || bridgeInput.value;
-
-      startButton.onclick = () => {
+    setTimeout(function () {
+      if (!polling) {
+        appendLog('自动轮询已启动');
         polling = true;
         startButton.disabled = true;
         stopButton.disabled = false;
         onceButton.disabled = true;
         tick();
-      };
+      }
+    }, 300);
 
-      onceButton.onclick = () => {
-        if (!busy) {
-          tick({ single: true });
-        }
-      };
+    window.onmessage = async function (event) {
+      var message = event.data.pluginMessage;
+      if (!message || message.type !== 'job-result') return;
+      await postResult(message);
+      busy = false;
+      currentJob = null;
+      if (polling) timer = setTimeout(function () { tick(); }, 1000);
+      else setState('idle');
+    };
 
-      stopButton.onclick = () => {
-        polling = false;
-        startButton.disabled = false;
-        stopButton.disabled = true;
-        onceButton.disabled = false;
-        setState("stopped");
-        if (timer) {
-          clearTimeout(timer);
-          timer = null;
-        }
-      };
-
-      bridgeInput.onchange = () => {
-        localStorage.setItem("bridgeUrl", bridgeInput.value.trim());
-      };
-
-      setTimeout(() => {
-        if (!polling) {
-          appendLog("Auto polling started");
-          polling = true;
-          startButton.disabled = true;
-          stopButton.disabled = false;
-          onceButton.disabled = true;
-          tick();
-        }
-      }, 300);
-
-      window.onmessage = async (event) => {
-        const message = event.data.pluginMessage;
-        if (!message || message.type !== "job-result") {
+    async function tick(options) {
+      options = options || {};
+      if (busy) return;
+      try {
+        setState('checking');
+        var response = await fetch(getBridgeUrl() + '/api/figma-bridge/jobs/next?clientId=figma-plugin');
+        bridgeStateNode.textContent = response.ok ? 'connected' : 'HTTP ' + response.status;
+        if (!response.ok) throw new Error('Bridge returned ' + response.status);
+        var queue = await response.json();
+        if (!queue.job) {
+          setState('idle');
+          appendLog('No queued job');
+          if (polling && !options.single) timer = setTimeout(function () { tick(); }, 1500);
           return;
         }
+        busy = true;
+        currentJob = queue.job;
+        lastJobNode.textContent = queue.job.id;
+        setState('executing');
+        appendLog('Claimed ' + queue.job.id);
+        parent.postMessage({ pluginMessage: { type: 'execute-job', job: queue.job } }, '*');
+      } catch (error) {
+        bridgeStateNode.textContent = 'error';
+        appendLog(error.message || String(error));
+        setState('error');
+        if (polling && !options.single) timer = setTimeout(function () { tick(); }, 2500);
+      }
+    }
 
-        await postResult(message);
-        busy = false;
-        currentJob = null;
-        if (polling) {
-          timer = setTimeout(() => tick(), 1000);
-        } else {
-          setState("idle");
-        }
+    async function postResult(message) {
+      var jobId = message.jobId || (currentJob && currentJob.id);
+      if (!jobId) { appendLog('Cannot post result without job id'); return; }
+      var response = await fetch(getBridgeUrl() + '/api/figma-bridge/jobs/' + jobId + '/result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: message.status, result: message.result || null, error: message.error || null, logs: message.logs || [] })
+      });
+      if (!response.ok) { appendLog('Failed to post result for ' + jobId + ': HTTP ' + response.status); return; }
+      appendLog(jobId + ' ' + message.status);
+      if (message.error && message.error.message) appendLog(message.error.message);
+      setState(message.status);
+    }
+
+    var roleColors = { heroImage:'#ef4444', moduleBackground:'#1677ff', tabGroup:'#7c3aed', selectedTab:'#22c55e', button:'#22c55e', icon:'#eab308', artText:'#f97316', foreground:'#d97706', shape:'#14b8a6', text:'#0ea5e9', ignore:'#6b7280' };
+    var roleLabels = { heroImage:'完整头图', moduleBackground:'区域背景', tabGroup:'Tab 组', selectedTab:'选中态', button:'按钮', icon:'图标', artText:'艺术字', foreground:'前景素材', shape:'形状', text:'文字', ignore:'忽略' };
+    var roleOrder = ['moduleBackground','heroImage','tabGroup','selectedTab','button','icon','artText','foreground','shape','text','ignore'];
+    var sourceFile = null;
+    var sourceDataUrl = '';
+    var data = null;
+    var selectedIndex = -1;
+    var addMode = false;
+    var dragMode = null;
+    var dragHandle = null;
+    var dragOrigin = null;
+    var originalBox = null;
+    var startPoint = null;
+    var draft = null;
+    var zoom = 1;
+    var img = document.getElementById('sourceImage');
+    var canvas = document.getElementById('overlay');
+    var ctx = canvas.getContext('2d');
+    var stage = document.getElementById('stage');
+    var viewport = document.getElementById('viewport');
+    var fileInput = document.getElementById('fileInput');
+    var dropEmpty = document.getElementById('dropEmpty');
+
+    bindClick(document.getElementById('chooseImage'), function () { fileInput.click(); });
+    bindClick(document.getElementById('saveHandoff'), saveHandoff);
+    fileInput.onchange = function () { if (fileInput.files && fileInput.files[0]) loadImageFile(fileInput.files[0]); };
+    document.getElementById('scaleSelect').onchange = function () { applyZoomChoice(); };
+    window.onresize = function () { if (data && document.getElementById('scaleSelect').value === 'fit') applyZoomChoice(); };
+    viewport.ondragover = function (event) { event.preventDefault(); };
+    viewport.ondrop = function (event) {
+      event.preventDefault();
+      var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+      if (file) loadImageFile(file);
+    };
+
+    canvas.onmousedown = function (event) {
+      if (!data) return;
+      var point = pointer(event);
+      var handle = hitHandle(point);
+      var hitIndex = handle ? selectedIndex : hitRegion(point);
+      if (handle && selectedIndex >= 0) {
+        dragMode = 'resize'; dragHandle = handle; dragOrigin = point; originalBox = cloneBox(data.regions[selectedIndex].bbox);
+      } else if (hitIndex >= 0 && !addMode) {
+        selectedIndex = hitIndex;
+        dragMode = 'move';
+        dragOrigin = point;
+        originalBox = cloneBox(data.regions[selectedIndex].bbox);
+      } else {
+        selectedIndex = -1;
+        addMode = true;
+        dragMode = 'draw';
+        startPoint = point;
+        draft = { x: point.x, y: point.y, width: 0, height: 0 };
+      }
+      render();
+    };
+    canvas.onmousemove = function (event) {
+      if (!data) return;
+      var point = pointer(event);
+      updateCursor(point);
+      if (dragMode === 'draw' && startPoint) {
+        draft = normalizeRect(startPoint.x, startPoint.y, point.x, point.y);
+      } else if (dragMode === 'move' && selectedIndex >= 0) {
+        data.regions[selectedIndex].bbox = clampBox({ x: originalBox.x + point.x - dragOrigin.x, y: originalBox.y + point.y - dragOrigin.y, width: originalBox.width, height: originalBox.height });
+      } else if (dragMode === 'resize' && selectedIndex >= 0) {
+        data.regions[selectedIndex].bbox = resizeBox(originalBox, dragHandle, point);
+      }
+      draw();
+    };
+    window.onmouseup = function () {
+      if (dragMode === 'draw' && draft && draft.width >= 4 && draft.height >= 4) {
+        addRegion(draft);
+      }
+      startPoint = null; dragMode = null; dragHandle = null; dragOrigin = null; originalBox = null; draft = null; addMode = false;
+      render();
+    };
+
+    async function loadImageFile(file) {
+      if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+        setAnnotationStatus('只支持 PNG、JPG、WebP。', 'error');
+        return;
+      }
+      sourceFile = file;
+      sourceDataUrl = await readFileAsDataUrl(file);
+      var probe = await loadImageProbe(sourceDataUrl);
+      var scale = 750 / probe.width;
+      var canvasHeight = Math.round(probe.height * scale);
+      data = {
+        version: 'manual-annotations.v0.2',
+        sourceImage: file.name,
+        canvas: { width: 750, height: canvasHeight },
+        sourceImageOriginal: { width: probe.width, height: probe.height, fileName: file.name, mimeType: file.type },
+        normalization: { targetWidth: 750, scale: scale, coordinateSystem: '所有 bbox 坐标均为按 750px 宽度等比缩放后的页面坐标。' },
+        recognitionWorkflow: buildRecognitionWorkflow(),
+        regions: []
       };
+      img.src = sourceDataUrl;
+      img.style.display = 'block';
+      canvas.style.display = 'block';
+      dropEmpty.style.display = 'none';
+      selectedIndex = -1;
+      setAnnotationStatus('已添加 UI 图。点击“添加框选区域”后在画布拖拽框选。', 'ok');
+      document.getElementById('sourceName').textContent = file.name + '，原始 ' + probe.width + ' x ' + probe.height + '，按 750px 宽记录。';
+      applyZoomChoice();
+      render();
+    }
 
-      async function tick(options = {}) {
-        if (busy) {
-          return;
-        }
+    function buildRecognitionWorkflow() {
+      return {
+        targetCanvasWidth: 750,
+        removePhoneSystemBars: true,
+        requireImage2ForTransparentAssets: true,
+        reconstructionRule: 'Codex 返回分层 page.json 后，Figma 拼接页面时应隐藏原图；所有元素必须按原图位置和尺寸完全覆盖源图。',
+        order: [
+          '页面先按 750px 宽度等比归一化，记录归一化后的坐标。',
+          '识别整页底色并作为 Figma 根 Frame 填充。',
+          '去除顶部电池条、底部安全条等手机系统元素。',
+          '按框选类型优先处理文字，识别文本内容、字体、字号、字重、颜色、坐标和尺寸。',
+          '从页面中清除已识别文字后，分离 Tab、按钮、图标，透明素材全部使用 image2 去背景。',
+          '识别完整头图位置；头图默认保持整张图，不拆内部人物、奖杯或艺术字。',
+          '最后识别每个区域背景，裁切为有业务意义的背景图。'
+        ]
+      };
+    }
 
-        try {
-          setState("checking");
-          const bridgeUrl = getBridgeUrl();
-          const response = await fetch(`${bridgeUrl}/api/figma-bridge/jobs/next?clientId=figma-plugin`);
-          bridgeStateNode.textContent = response.ok ? "connected" : `HTTP ${response.status}`;
-          if (!response.ok) {
-            throw new Error(`Bridge returned ${response.status}`);
-          }
+    function addRegion(bbox) {
+      if (!data) return;
+      var role = 'moduleBackground';
+      var id = nextRegionId(role);
+      data.regions.push({ id: id, role: role, label: '未命名区域', bbox: clampBox(bbox), instruction: '', priority: 'high' });
+      selectedIndex = data.regions.length - 1;
+      setAnnotationStatus('已新增框选区域，请在右侧填写名称、类型和备注。', 'pending');
+    }
 
-          const data = await response.json();
-          if (!data.job) {
-            setState("idle");
-            appendLog("No queued job");
-            if (polling && !options.single) {
-              timer = setTimeout(() => tick(), 1500);
-            }
-            return;
-          }
+    function render() {
+      draw();
+      renderLayerList();
+      updateSubmitState();
+    }
 
-          busy = true;
-          currentJob = data.job;
-          lastJobNode.textContent = data.job.id;
-          setState("executing");
-          appendLog(`Claimed ${data.job.id}`);
-          parent.postMessage(
-            {
-              pluginMessage: {
-                type: "execute-job",
-                job: data.job
-              }
-            },
-            "*"
-          );
-        } catch (error) {
-          bridgeStateNode.textContent = "error";
-          appendLog(error.message || String(error));
-          setState("error");
-          if (polling && !options.single) {
-            timer = setTimeout(() => tick(), 2500);
-          }
-        }
+    function renderLayerList() {
+      var list = document.getElementById('regions');
+      var count = data && Array.isArray(data.regions) ? data.regions.length : 0;
+      document.getElementById('regionCount').textContent = count + ' 个区域';
+      var html = '<div class="addCard" data-add="1">添加框选区域</div>';
+      if (!data) {
+        list.innerHTML = html;
+        return;
       }
+      html += data.regions.map(function (region, index) {
+        var color = roleColors[region.role] || '#1677ff';
+        var active = index === selectedIndex;
+        return '<div class="layerCard ' + (active ? 'active' : '') + '" data-index="' + index + '">' +
+          '<div class="layerTop">' +
+          '<span class="swatch" style="background:' + color + '"></span>' +
+          '<input class="layerName" data-field="label" data-index="' + index + '" value="' + escapeAttr(region.label || '') + '" placeholder="区域名称">' +
+          '<select class="layerType" data-field="role" data-index="' + index + '">' + roleOptions(region.role) + '</select>' +
+          '<button class="danger deleteBtn" data-delete="' + index + '">删</button>' +
+          '</div>' +
+          '<div class="layerMeta">' + escapeHtml(region.id || '') + ' / ' + bboxText(region.bbox) + '</div>' +
+          '<div class="layerBody">' +
+          '<label>备注</label>' +
+          '<textarea data-field="instruction" data-index="' + index + '" placeholder="写清楚这个区域怎么拆层：哪些转文字，哪些是按钮/Tab/图标，哪些需要 image2 透明素材，哪些保留背景。">' + escapeHtml(region.instruction || '') + '</textarea>' +
+          '</div>' +
+          '</div>';
+      }).join('');
+      list.innerHTML = html;
+    }
 
-      async function postResult(message) {
-        const bridgeUrl = getBridgeUrl();
-        const jobId = message.jobId || (currentJob && currentJob.id);
-        if (!jobId) {
-          appendLog("Cannot post result without job id");
-          return;
-        }
-
-        const body = {
-          status: message.status,
-          result: message.result || null,
-          error: message.error || null,
-          logs: message.logs || []
-        };
-
-        const response = await fetch(`${bridgeUrl}/api/figma-bridge/jobs/${jobId}/result`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body)
-        });
-
-        if (!response.ok) {
-          appendLog(`Failed to post result for ${jobId}: HTTP ${response.status}`);
-          return;
-        }
-
-        appendLog(`${jobId} ${message.status}`);
-        if (message.error && message.error.message) {
-          appendLog(message.error.message);
-        }
-        setState(message.status);
+    document.getElementById('regions').onclick = function (event) {
+      var addNode = event.target.closest('[data-add]');
+      if (addNode) {
+        if (!data) { setAnnotationStatus('请先添加 UI 图。', 'error'); return; }
+        selectedIndex = -1;
+        addMode = true;
+        setAnnotationStatus('在画布上拖拽，创建新的框选区域。', 'pending');
+        render();
+        return;
       }
-
-      function getBridgeUrl() {
-        const value = bridgeInput.value.trim().replace(/\/+$/, "");
-        localStorage.setItem("bridgeUrl", value);
-        return value;
+      var del = event.target.closest('[data-delete]');
+      if (del) {
+        event.stopPropagation();
+        var deleteIndex = Number(del.getAttribute('data-delete'));
+        data.regions.splice(deleteIndex, 1);
+        selectedIndex = -1;
+        render();
+        return;
       }
-
-      function setState(value) {
-        stateNode.textContent = value;
+      var card = event.target.closest('[data-index]');
+      if (card && !event.target.matches('input,select,textarea,button')) {
+        selectedIndex = Number(card.getAttribute('data-index'));
+        render();
       }
+    };
 
-      function appendLog(line) {
-        const time = new Date().toLocaleTimeString();
-        logNode.textContent = `${time} ${line}\n${logNode.textContent}`;
+    document.getElementById('regions').oninput = function (event) {
+      updateRegionField(event.target);
+    };
+    document.getElementById('regions').onchange = function (event) {
+      updateRegionField(event.target);
+    };
+
+    function updateRegionField(target) {
+      if (!data || !target || target.getAttribute('data-index') === null) return;
+      var index = Number(target.getAttribute('data-index'));
+      var field = target.getAttribute('data-field');
+      if (!data.regions[index] || !field) return;
+      data.regions[index][field] = target.value;
+      if (field === 'label' && !data.regions[index].id) data.regions[index].id = nextRegionId(data.regions[index].role || 'region');
+      selectedIndex = index;
+      draw();
+      updateSubmitState();
+    }
+
+    async function saveHandoff() {
+      if (!data || !sourceDataUrl || !data.regions.length) return;
+      var warnings = validateData();
+      if (warnings.length) {
+        setAnnotationStatus(warnings[0], 'error');
+        return;
       }
-    </script>
-  </body>
+      setAnnotationStatus('正在保存标注并提交给 Codex...', 'pending');
+      var response = await fetch(getBridgeUrl() + '/api/figma-bridge/annotations/handoff-from-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceImageName: sourceFile ? sourceFile.name : 'image2-screen.png',
+          sourceImageDataUrl: sourceDataUrl,
+          annotations: data
+        })
+      });
+      var body = await response.json();
+      if (!response.ok) {
+        setAnnotationStatus((body && body.error) || ('提交失败 HTTP ' + response.status), 'error');
+        return;
+      }
+      setAnnotationStatus('已提交给 Codex。回到 Codex 输入：继续识别这个标注 handoff。Package: ' + body.packageDir, 'ok');
+    }
+
+    function validateData() {
+      if (!data || !data.regions.length) return ['请先框选至少一个区域。'];
+      for (var i = 0; i < data.regions.length; i += 1) {
+        var region = data.regions[i];
+        if (!region.label || !region.label.trim()) return ['第 ' + (i + 1) + ' 个区域缺少名称。'];
+        if (region.role !== 'ignore' && (!region.instruction || region.instruction.trim().length < 6)) return [region.label + ' 需要填写更明确的备注。'];
+      }
+      return [];
+    }
+
+    function updateSubmitState() {
+      var submit = document.getElementById('saveHandoff');
+      submit.disabled = !(data && sourceDataUrl && data.regions && data.regions.length);
+    }
+
+    function draw() {
+      if (!data) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      data.regions.forEach(function (region, index) { drawBox(region.bbox, roleColors[region.role] || '#1677ff', region.label || region.id, index === selectedIndex); });
+      if (draft) drawBox(draft, '#f97316', '新区域', true);
+    }
+
+    function drawBox(bbox, color, label, active) {
+      if (!bbox) return;
+      var sx = canvas.width / data.canvas.width;
+      var sy = canvas.height / data.canvas.height;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = active ? 3 : 2;
+      ctx.setLineDash(active ? [] : [6, 4]);
+      ctx.strokeRect(bbox.x * sx, bbox.y * sy, bbox.width * sx, bbox.height * sy);
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = active ? .18 : .1;
+      ctx.fillRect(bbox.x * sx, bbox.y * sy, bbox.width * sx, bbox.height * sy);
+      ctx.globalAlpha = 1;
+      ctx.font = '12px Inter, Arial';
+      var tx = bbox.x * sx + 5;
+      var ty = Math.max(18, bbox.y * sy + 18);
+      var text = String(label || '');
+      var tw = ctx.measureText(text).width + 10;
+      ctx.fillStyle = color;
+      ctx.fillRect(tx - 2, ty - 14, tw, 18);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(text, tx + 3, ty);
+      if (active) drawHandles(bbox, sx, sy, color);
+      ctx.restore();
+    }
+
+    function drawHandles(bbox, sx, sy, color) {
+      var points = [[bbox.x,bbox.y],[bbox.x+bbox.width,bbox.y],[bbox.x,bbox.y+bbox.height],[bbox.x+bbox.width,bbox.y+bbox.height]];
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = color;
+      points.forEach(function (p) { var x = p[0] * sx; var y = p[1] * sy; ctx.fillRect(x - 4, y - 4, 8, 8); ctx.strokeRect(x - 4, y - 4, 8, 8); });
+    }
+
+    function applyZoomChoice() {
+      if (!data) return;
+      var choice = document.getElementById('scaleSelect').value;
+      if (choice === 'fit') {
+        zoom = Math.max(.1, Math.min(2, (viewport.clientWidth - 26) / data.canvas.width));
+      } else {
+        zoom = Number(choice);
+      }
+      resizeCanvas();
+    }
+
+    function resizeCanvas() {
+      if (!data) return;
+      var displayWidth = Math.max(1, Math.round(data.canvas.width * zoom));
+      var displayHeight = Math.max(1, Math.round(data.canvas.height * zoom));
+      img.style.width = displayWidth + 'px';
+      img.style.height = displayHeight + 'px';
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+      stage.style.width = displayWidth + 'px';
+      stage.style.height = displayHeight + 'px';
+      draw();
+    }
+
+    function pointer(event) {
+      var rect = canvas.getBoundingClientRect();
+      return { x: Math.round((event.clientX - rect.left) * data.canvas.width / rect.width), y: Math.round((event.clientY - rect.top) * data.canvas.height / rect.height) };
+    }
+    function normalizeRect(x1, y1, x2, y2) { return clampBox({ x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) }); }
+    function hitRegion(point) { for (var i = data.regions.length - 1; i >= 0; i -= 1) { var b = data.regions[i].bbox; if (point.x >= b.x && point.x <= b.x + b.width && point.y >= b.y && point.y <= b.y + b.height) return i; } return -1; }
+    function hitHandle(point) { if (selectedIndex < 0) return null; var b = data.regions[selectedIndex].bbox; var t = Math.max(6, Math.round(8 / zoom)); var h = { nw:[b.x,b.y], ne:[b.x+b.width,b.y], sw:[b.x,b.y+b.height], se:[b.x+b.width,b.y+b.height] }; for (var key in h) if (Math.abs(point.x - h[key][0]) <= t && Math.abs(point.y - h[key][1]) <= t) return key; return null; }
+    function updateCursor(point) { var handle = hitHandle(point); canvas.style.cursor = handle === 'nw' || handle === 'se' ? 'nwse-resize' : handle === 'ne' || handle === 'sw' ? 'nesw-resize' : hitRegion(point) >= 0 ? 'move' : 'crosshair'; }
+    function resizeBox(box, handle, point) { var x1 = box.x, y1 = box.y, x2 = box.x + box.width, y2 = box.y + box.height; if (handle.indexOf('n') !== -1) y1 = point.y; if (handle.indexOf('s') !== -1) y2 = point.y; if (handle.indexOf('w') !== -1) x1 = point.x; if (handle.indexOf('e') !== -1) x2 = point.x; return normalizeRect(x1, y1, x2, y2); }
+    function cloneBox(box) { return { x: box.x, y: box.y, width: box.width, height: box.height }; }
+    function clampBox(box) { var x = Math.max(0, Math.min(data.canvas.width - 1, Math.round(box.x))); var y = Math.max(0, Math.min(data.canvas.height - 1, Math.round(box.y))); return { x: x, y: y, width: Math.max(1, Math.min(data.canvas.width - x, Math.round(box.width))), height: Math.max(1, Math.min(data.canvas.height - y, Math.round(box.height))) }; }
+    function nextRegionId(role) { var used = {}; data.regions.forEach(function (r) { used[r.id] = true; }); var i = data.regions.length + 1; var id = sanitizeId(role) + '_' + String(i).padStart(2, '0'); while (used[id]) { i += 1; id = sanitizeId(role) + '_' + String(i).padStart(2, '0'); } return id; }
+    function sanitizeId(value) { return String(value || 'region').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'region'; }
+    function bboxText(b) { return b ? Math.round(b.x) + ',' + Math.round(b.y) + ' / ' + Math.round(b.width) + 'x' + Math.round(b.height) : '无坐标'; }
+    function roleOptions(selected) { return roleOrder.map(function (role) { return '<option value="' + role + '"' + (role === selected ? ' selected' : '') + '>' + roleLabels[role] + '</option>'; }).join(''); }
+    function readFileAsDataUrl(file) { return new Promise(function (resolve, reject) { var reader = new FileReader(); reader.onload = function () { resolve(String(reader.result)); }; reader.onerror = function () { reject(reader.error); }; reader.readAsDataURL(file); }); }
+    function loadImageProbe(url) { return new Promise(function (resolve, reject) { var probe = new Image(); probe.onload = function () { resolve({ width: probe.naturalWidth, height: probe.naturalHeight }); }; probe.onerror = reject; probe.src = url; }); }
+    function setAnnotationStatus(message, tone) { var node = document.getElementById('annotationStatus'); node.className = tone === 'error' ? 'warning' : tone === 'ok' ? 'ok' : tone === 'pending' ? 'pending' : 'small'; node.textContent = message || ''; }
+    function setTab(name) { document.getElementById('importView').classList.toggle('active', name === 'import'); document.getElementById('annotateView').classList.toggle('active', name === 'annotate'); document.getElementById('tabImport').classList.toggle('active', name === 'import'); document.getElementById('tabAnnotate').classList.toggle('active', name === 'annotate'); if (name === 'annotate') setTimeout(applyZoomChoice, 0); }
+    function bindClick(node, handler) { if (node.addEventListener) node.addEventListener('click', handler); else node.onclick = handler; }
+    function readStored(key) { try { return window.localStorage && localStorage.getItem(key); } catch (error) { return null; } }
+    function writeStored(key, value) { try { if (window.localStorage) localStorage.setItem(key, value); } catch (error) {} }
+    function getBridgeUrl() { var value = bridgeInput.value.trim().replace(/\/+$/, ''); writeStored('bridgeUrl', value); return value; }
+    function setState(value) { stateNode.textContent = value; }
+    function appendLog(line) { var time = new Date().toLocaleTimeString(); logNode.textContent = time + ' ' + line + '\n' + logNode.textContent; }
+    function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, function (char) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[char]; }); }
+    function escapeAttr(text) { return escapeHtml(text).replace(/`/g, '&#096;'); }
+  </script>
+</body>
 </html>

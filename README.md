@@ -118,9 +118,9 @@ In Figma Desktop:
 3. Run `CodeUi-to-Figma`.
 4. Keep the Bridge URL as `http://localhost:39217`.
 5. Use `导入轮询` to receive finished import jobs.
-6. Use `标注工作台` to load a package directory, draw annotation boxes, write Chinese instructions, and click `保存并交给 Codex`.
+6. Use `标注工作台` to drag in or choose a UI image, draw annotation boxes, write Chinese instructions in the layer cards, and click `保存并提交给 Codex`.
 
-The `标注工作台` tab is the preferred daily entry. It replaces manually opening `analysis/manual-annotations.html` for most users.
+The `标注工作台` tab is the preferred daily entry. It creates the package and Codex handoff from the uploaded image, so most users no longer need to paste a package directory or manually open `analysis/manual-annotations.html`.
 
 ## Submit the Sample Page
 
@@ -211,10 +211,12 @@ For complex pages, create manual region constraints before recognition. The pref
 
 1. Open `CodeUi-to-Figma`.
 2. Switch to `标注工作台`.
-3. Paste the package directory, for example `var/generated/qixi-parsed` as an absolute path.
-4. Click `加载源图`.
-5. Draw boxes, fill the region type and the `给 Codex 的备注` field.
-6. Click `保存并交给 Codex`.
+3. Drag a PNG/JPG/WebP UI image into the canvas, or click `添加 UI 图`.
+4. The workbench records all coordinates in a normalized 750px-wide page coordinate system.
+5. Click `添加框选区域`, draw boxes, set each card's name/type, and fill the remark field.
+6. Click `保存并提交给 Codex`.
+
+The handoff tells Codex to process the page in this order: normalize to 750px width, detect the full-page base color, remove phone system bars, recognize text first, separate Tab/button/icon/art/foreground assets with image2 background removal, preserve the hero image by default, then finish module backgrounds.
 
 The legacy standalone helper is still available for fallback:
 
@@ -222,11 +224,14 @@ The legacy standalone helper is still available for fallback:
 npm run annotate:prepare -- --package-dir var/generated/qixi-parsed
 ```
 
-This writes:
+The plugin path creates a package under the Bridge data directory and writes:
 
 ```text
+page.json
+source/image2-screen.*
 analysis/manual-annotations.json
-analysis/manual-annotations.html
+analysis/codex-handoff.json
+analysis/codex-handoff.md
 ```
 
 Both the Figma plugin workbench and the HTML helper save `analysis/manual-annotations.json` and create `analysis/codex-handoff.json` / `.md` with `保存并交给 Codex`, so the Codex session can read the constraints and perform recognition. `下载 JSON` is only a fallback export.
@@ -239,6 +244,8 @@ These annotations let you explicitly mark regions such as:
 - `moduleBackground`: crop a meaningful area background
 - `tabGroup`: force tab container, tab labels, and selected state separation
 - `selectedTab`: force selected tab state as its own shape
+- `button`: require a button shape/background and text/icon contents to be recognized separately
+- `icon`: require an image2 transparent icon asset and exact placement
 - `artText`: require an image2 transparent text-image asset
 - `foreground`: require an image2 transparent foreground asset
 

@@ -10,8 +10,8 @@ const HOST = process.env.BRIDGE_HOST || "localhost";
 const ROOT_DIR = resolve(process.cwd());
 const DATA_DIR = resolve(process.env.BRIDGE_DATA_DIR || resolve(ROOT_DIR, "var/bridge"));
 const JOBS_FILE = resolve(DATA_DIR, "jobs.json");
-const MAX_BODY_BYTES = 25 * 1024 * 1024;
-const ALLOWED_ASSET_ROOTS = [ROOT_DIR, resolve("/private/tmp"), resolve("/tmp")];
+const MAX_BODY_BYTES = 100 * 1024 * 1024;
+const ALLOWED_ASSET_ROOTS = [ROOT_DIR, DATA_DIR, resolve("/private/tmp"), resolve("/tmp")];
 
 const MIME_TYPES = {
   ".png": "image/png",
@@ -87,6 +87,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/api/figma-bridge/annotations/handoff") {
       const body = await readJsonBody(req);
       const result = await createCodexHandoff(body);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/figma-bridge/annotations/handoff-from-image") {
+      const body = await readJsonBody(req);
+      const result = await createImageAnnotationHandoff(body);
       sendJson(res, 200, result);
       return;
     }
@@ -226,6 +233,73 @@ async function saveManualAnnotations(body) {
   };
 }
 
+async function createImageAnnotationHandoff(body) {
+  if (!body || typeof body !== "object") {
+    throw badRequest("Expected a JSON object body");
+  }
+
+  const image = parseImageDataUrl(body.sourceImageDataUrl);
+  const sourceName = sanitizeFileBase(body.sourceImageName || "image2-screen");
+  const annotations = body.annotations && typeof body.annotations === "object" ? body.annotations : null;
+  if (!annotations || !Array.isArray(annotations.regions)) {
+    throw badRequest("Expected annotations.regions");
+  }
+
+  const packageName = `manual-${timestamp()}-${sourceName}`;
+  const packageDir = resolve(DATA_DIR, "packages", packageName);
+  const sourceDir = resolve(packageDir, "source");
+  await mkdir(sourceDir, { recursive: true });
+
+  const sourceRelativePath = `source/image2-screen.${image.extension}`;
+  const sourcePath = resolve(packageDir, sourceRelativePath);
+  await writeFile(sourcePath, image.bytes);
+
+  const canvas = annotations.canvas || {};
+  const width = Number(canvas.width || 750);
+  const height = Number(canvas.height || 0);
+  const page = {
+    schemaVersion: "activity-page.v0.1",
+    name: body.name || sourceName || "CodeUi Manual Annotation",
+    canvas: {
+      width,
+      height,
+      background: "#FFFFFF",
+      sourceImage: sourceRelativePath
+    },
+    metadata: {
+      intent: body.prompt || "",
+      prompt: body.prompt || "",
+      unit: "px",
+      source: "figma-plugin-manual-workbench",
+      pipelineState: "manual-annotations-ready",
+      requiresRecognition: true,
+      recognitionRequired: true,
+      baselineOnly: true,
+      sourceImageOriginal: annotations.sourceImageOriginal || null,
+      normalization: annotations.normalization || {
+        targetWidth: 750,
+        coordinateSystem: "All bboxes are normalized to a 750px-wide canvas."
+      },
+      recognitionWorkflow: annotations.recognitionWorkflow || defaultRecognitionWorkflow()
+    },
+    sections: []
+  };
+  const pagePath = resolve(packageDir, "page.json");
+  await writeFile(pagePath, JSON.stringify(page, null, 2));
+
+  const normalizedAnnotations = {
+    ...annotations,
+    sourceImage: sourceRelativePath,
+    canvas: { width, height },
+    recognitionWorkflow: annotations.recognitionWorkflow || defaultRecognitionWorkflow()
+  };
+
+  return createCodexHandoff({
+    packageDir,
+    annotations: normalizedAnnotations
+  });
+}
+
 async function readAnnotationWorkbench(req, url) {
   const packageDir = resolvePackageDir(url.searchParams.get("packageDir"));
   const pagePath = resolve(packageDir, "page.json");
@@ -261,8 +335,8 @@ function resolvePackageDir(value) {
     throw badRequest("Missing packageDir");
   }
   const packageDir = resolve(String(value));
-  if (!isInside(ROOT_DIR, packageDir) && packageDir !== ROOT_DIR) {
-    throw Object.assign(new Error("packageDir must be inside the bridge workspace"), { statusCode: 403 });
+  if (!isInside(ROOT_DIR, packageDir) && packageDir !== ROOT_DIR && !isInside(DATA_DIR, packageDir) && packageDir !== DATA_DIR) {
+    throw Object.assign(new Error("packageDir must be inside the bridge workspace or Bridge data directory"), { statusCode: 403 });
   }
   return packageDir;
 }
@@ -282,6 +356,7 @@ function buildEmptyAnnotations(page, sourceImage) {
 
 async function createCodexHandoff(body) {
   const saved = await saveManualAnnotations(body);
+  const annotations = body && body.annotations && typeof body.annotations === "object" ? body.annotations : {};
   const pagePath = resolve(saved.packageDir, "page.json");
   const page = JSON.parse(await readFile(pagePath, "utf8"));
   const analysisDir = resolve(saved.packageDir, "analysis");
@@ -299,6 +374,10 @@ async function createCodexHandoff(body) {
     recognitionPath,
     removeBackgroundTasksPath: tasksPath,
     prompt: page.metadata && page.metadata.prompt ? page.metadata.prompt : "",
+    canvas: page.canvas || null,
+    normalization: annotations.normalization || (page.metadata && page.metadata.normalization) || null,
+    sourceImageOriginal: annotations.sourceImageOriginal || (page.metadata && page.metadata.sourceImageOriginal) || null,
+    recognitionWorkflow: annotations.recognitionWorkflow || (page.metadata && page.metadata.recognitionWorkflow) || defaultRecognitionWorkflow(),
     nextAction: "Codex must read source image plus every manual-annotations.json region, including the full instruction/备注 text, then update recognition.json and remove-background-tasks.json. Do not call OpenAI API from scripts. Do not let the workbench perform semantic recognition.",
     transparentCutoutPolicy: "All artText and foreground transparent PNG assets must be produced by image2 background removal. Local code may crop rectangular backgrounds only; it must not fake transparent cutouts with canvas, thresholding, masks, OpenCV, or Pillow.",
     afterCodexRecognition: [
@@ -332,14 +411,20 @@ function buildHandoffMarkdown(handoff) {
     `Recognition output: ${handoff.recognitionPath}`,
     `Image2 tasks output: ${handoff.removeBackgroundTasksPath}`,
     `User prompt: ${handoff.prompt || "未提供"}`,
+    `Canvas: ${handoff.canvas ? `${handoff.canvas.width} x ${handoff.canvas.height}` : "未提供"}`,
+    `Normalization: ${handoff.normalization ? JSON.stringify(handoff.normalization) : "未提供"}`,
     "",
     "## Codex 下一步",
     "",
-    "1. 读取 source image 和 manual-annotations.json，逐条完整阅读每个 region 的 instruction/备注。",
-    "2. 按人工框选约束和备注里的多层级拆分要求补全 recognition.json。",
-    "3. 如有 artText/foreground，写入 remove-background-tasks.json，并等待 image2 去背景素材；不要用本地抠图代替。",
-    "4. 运行 apply:recognition 和 validate:page。",
-    "5. 校验通过后提交到 Figma Bridge。",
+    "1. 如果源图不是 750px 宽，先按 handoff normalization 等比归一化到 750px 宽；所有坐标以归一化后的页面坐标为准。",
+    "2. 先识别整页底色，作为 Figma 根 Frame 填充。",
+    "3. 去除顶部电池条、底部安全条等手机系统元素，不作为业务 UI 图层。",
+    "4. 逐条读取 source image 和 manual-annotations.json，完整阅读每个 region 的 instruction/备注。",
+    "5. 先处理文字：识别文本内容、字体、字号、字重、颜色、坐标和尺寸，并写入 editableText。",
+    "6. 再分离 Tab、按钮、图标、艺术字和前景素材；所有透明 PNG/WebP 必须由 image2 去背景生成，不要用本地抠图代替。",
+    "7. 完整头图默认保持一整张图；之后再处理区域背景和模块背景。",
+    "8. 补全 recognition.json 和 remove-background-tasks.json，运行 apply:recognition 和 validate:page。",
+    "9. 校验通过后提交到 Figma Bridge；Figma 拼接时隐藏原图，所有元素必须按正确位置和尺寸覆盖源图。",
     "",
     "## 后续命令",
     "",
@@ -537,6 +622,51 @@ function assertInsidePackage(packageDir, fullPath) {
   if (!isInside(packageDir, fullPath)) {
     throw Object.assign(new Error("Asset path escapes packageDir"), { statusCode: 403 });
   }
+}
+
+function parseImageDataUrl(value) {
+  const match = String(value || "").match(/^data:(image\/(?:png|jpeg|webp));base64,([a-z0-9+/=\r\n]+)$/i);
+  if (!match) {
+    throw badRequest("sourceImageDataUrl must be a PNG, JPG, or WebP data URL");
+  }
+  const mimeType = match[1].toLowerCase();
+  const extension = mimeType === "image/jpeg" ? "jpg" : mimeType.split("/")[1];
+  return {
+    mimeType,
+    extension,
+    bytes: Buffer.from(match[2], "base64")
+  };
+}
+
+function sanitizeFileBase(value) {
+  const base = String(value || "image2-screen")
+    .replace(/\.[a-z0-9]+$/i, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return base || "image2-screen";
+}
+
+function timestamp() {
+  return new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
+}
+
+function defaultRecognitionWorkflow() {
+  return {
+    targetCanvasWidth: 750,
+    removePhoneSystemBars: true,
+    requireImage2ForTransparentAssets: true,
+    reconstructionRule: "Codex returns layered page.json; Figma reconstruction hides the source image and all layers must cover the source image at the correct position and size.",
+    order: [
+      "Normalize the source image proportionally to a 750px page width before recording coordinates.",
+      "Detect the full-page base color and use it as the Figma root frame fill.",
+      "Remove phone system UI such as top battery/status bars and bottom safe-area bars before semantic layering.",
+      "Process text first by recognizing content, font family, font size, font weight, color, position, and size.",
+      "After text is removed from consideration, separate tabs, buttons, and icons; transparent assets must use image2 background removal.",
+      "Identify the hero image position; preserve the hero as a complete image unless a manual note explicitly says otherwise.",
+      "Finally identify module and section backgrounds from the annotated regions."
+    ]
+  };
 }
 
 async function readOptionalJson(path, fallback) {

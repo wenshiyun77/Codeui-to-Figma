@@ -89,7 +89,7 @@ analysis/manual-annotations.json
 analysis/manual-annotations.html
 ```
 
-Preferred daily workflow: use the Figma plugin's `标注工作台` tab. Paste the package directory, click `加载源图`, draw boxes, fill the `给 Codex 的备注` field, then click `保存并交给 Codex`. This writes `analysis/manual-annotations.json` and `analysis/codex-handoff.json` through the Bridge.
+Preferred daily workflow: use the Figma plugin's `标注工作台` tab. Drag in or choose the image2 UI image, draw boxes, set each layer card's name/type, fill the 备注 field, then click `保存并提交给 Codex`. The plugin normalizes the page to 750px width, creates a package under the Bridge data directory, and writes `analysis/manual-annotations.json` plus `analysis/codex-handoff.json` through the Bridge.
 
 The standalone HTML helper is a fallback for debugging. Each region can include a role, bbox, label, instruction, priority, target asset, and optional style. Important roles:
 
@@ -97,6 +97,8 @@ The standalone HTML helper is a fallback for debugging. Each region can include 
 - `moduleBackground`: crop this region as a meaningful background layer.
 - `tabGroup`: force the tab container, tab labels, separators, and selected state to be distinguished.
 - `selectedTab`: create a separate selected-state shape.
+- `button`: identify button background, text, icons, and state styling separately.
+- `icon`: create a transparent icon asset with image2 background removal.
 - `artText`: create a transparent `textImage` asset using image2 background removal.
 - `foreground`: create a transparent `foregroundImage` asset using image2 background removal.
 - `shape`: create an editable Figma shape when style is provided or clearly inferred.
@@ -105,7 +107,9 @@ The standalone HTML helper is a fallback for debugging. Each region can include 
 
 When annotations exist, recognition candidates should include `manualRegionId` when possible. Manual annotations are not optional hints; they are constraints for Codex recognition and package assembly. Read every region's `instruction`/备注 completely before recognizing that area, because it may describe exactly how to split multi-level elements inside the box.
 
-Manual boxes are not final cut instructions. They constrain recognition. Local code may crop ordinary rectangular backgrounds, but transparent `artText` and `foreground` assets must be produced by image2 background removal.
+Manual boxes are not final cut instructions. They constrain recognition. Local code may crop ordinary rectangular backgrounds, but transparent `artText`, `icon`, and `foreground` assets must be produced by image2 background removal.
+
+When a handoff includes `recognitionWorkflow`, follow its order strictly: normalize the page to 750px width, detect the full-page base color for the Figma root frame, remove phone status/safe-area bars, recognize editable text first, separate tabs/buttons/icons/art/foreground assets with image2 background removal, preserve the hero image by default, then finish module backgrounds.
 
 The visual annotation helper is a Chinese UI. It supports drawing, selecting, dragging, corner resizing, exact numeric coordinates, region roles, target assets, instructions, optional shape style, duplicate/delete, up/down ordering, JSON import/export, and structure warnings. Use this helper for complex pages before relying on free-form model recognition.
 
