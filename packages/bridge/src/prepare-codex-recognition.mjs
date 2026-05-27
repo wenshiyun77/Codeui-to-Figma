@@ -73,6 +73,7 @@ function buildPromptMarkdown({ inputPath, packageDir, outputDir, prompt, require
     "- Treat the image2 screen as the visual source of truth.",
     "- If manual annotations are provided, treat them as higher-priority constraints than free visual guessing.",
     "- For every manual region, read the full `instruction`/备注 text before making recognition decisions. Do not summarize it away.",
+    "- If a manual region has nested `elements`, treat each element bbox as a precise reference target for any `[元素ID]` mentioned in the region instruction.",
     "- The instruction text may contain explicit multi-layer handling rules for elements inside that region. Follow those rules when deciding background, editable text, shapes, textImage, and foreground tasks.",
     "- Manual boxes are recognition constraints, not final cut instructions. Use them to decide what to recognize and where; do not blindly export every box as a flat image layer.",
     "- Do not split inside a `heroImage` manual region unless its instruction explicitly asks for inner layers. Keep campaign head art as one complete image when annotated that way.",

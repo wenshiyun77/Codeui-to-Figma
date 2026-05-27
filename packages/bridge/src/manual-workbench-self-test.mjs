@@ -26,6 +26,9 @@ try {
   assertContains(pluginUi, "标注工作台", "Figma plugin exposes annotation workbench tab");
   assertContains(pluginUi, "添加 UI 图", "Figma plugin supports adding a UI image");
   assertContains(pluginUi, "添加框选区域", "Figma plugin exposes layer-list add card");
+  assertContains(pluginUi, "框选元素引用", "Figma plugin supports nested element reference boxes");
+  assertContains(pluginUi, "undoStack", "Figma plugin supports undo history");
+  assertContains(pluginUi, "clampPointToBox", "Figma plugin clamps out-of-canvas drags to box edges");
   assertContains(pluginUi, "保存并提交给 Codex", "Figma plugin exposes Codex submit button");
   assertContains(pluginUi, "页面会按 750px 宽度等比记录坐标", "Figma plugin explains 750px normalization");
   assertContains(html, "保存并交给 Codex", "generated HTML exposes Codex handoff button");

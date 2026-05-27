@@ -134,7 +134,6 @@
       border-radius: 10px;
       padding: 9px;
       background: #fff;
-      cursor: pointer;
     }
     .layerCard.active { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(22,119,255,.14); }
     .layerTop { display: grid; grid-template-columns: 12px minmax(0, 1fr) 118px 30px; gap: 7px; align-items: center; }
@@ -145,6 +144,41 @@
     .layerMeta { margin-top: 6px; color: var(--muted); font-size: 11px; }
     .layerBody { display: none; margin-top: 8px; }
     .layerCard.active .layerBody { display: block; }
+    .elementTools { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+    .elementBtn { flex: 0 0 auto; }
+    .hint { color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .elementList { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
+    .elementChip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 100%;
+      min-height: 24px;
+      padding: 2px 4px 2px 7px;
+      border: 1px solid #fed7aa;
+      border-radius: 6px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-weight: 800;
+    }
+    .elementChip::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border: 2px solid #f97316;
+      border-radius: 2px;
+      background: #fff;
+    }
+    .elementDelete {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border-radius: 5px;
+      background: #ffedd5;
+      color: #9a3412;
+      border-color: #fed7aa;
+      line-height: 18px;
+    }
     .warning, .ok, .pending {
       border-radius: 8px;
       padding: 8px;
@@ -337,6 +371,7 @@
     var data = null;
     var selectedIndex = -1;
     var addMode = false;
+    var elementAddMode = false;
     var dragMode = null;
     var dragHandle = null;
     var dragOrigin = null;
@@ -344,6 +379,12 @@
     var startPoint = null;
     var draft = null;
     var zoom = 1;
+    var undoStack = [];
+    var redoStack = [];
+    var fieldEditKey = '';
+    var caretByRegion = {};
+    var pendingDragSnapshot = null;
+    var elementDeleteHits = [];
     var img = document.getElementById('sourceImage');
     var canvas = document.getElementById('overlay');
     var ctx = canvas.getContext('2d');
@@ -382,17 +423,56 @@
     window.addEventListener('mouseup', stopPluginWindowResize);
 
     canvas.onmousedown = function (event) {
-      if (!data) return;
+      var deleted = deleteElementFromCanvas(event);
+      if (deleted) return;
+      beginCanvasDrag(event, false);
+    };
+    canvas.onmousemove = function (event) {
+      if (!data || dragMode) return;
+      updateCursor(pointer(event));
+    };
+    viewport.addEventListener('mousedown', function (event) {
+      if (!data || event.button !== 0 || event.target !== viewport) return;
+      beginCanvasDrag(event, true);
+    });
+    window.addEventListener('mousemove', handleCanvasMove);
+    window.addEventListener('mouseup', finishCanvasDrag);
+    window.addEventListener('keydown', handleShortcut);
+
+    function beginCanvasDrag(event, fromViewport) {
+      if (!data || event.button !== 0) return;
+      event.preventDefault();
       var point = pointer(event);
-      var handle = hitHandle(point);
-      var hitIndex = handle ? selectedIndex : hitRegion(point);
+      if (elementAddMode) {
+        if (selectedIndex < 0 || !data.regions[selectedIndex]) {
+          elementAddMode = false;
+          setAnnotationStatus('请先选中一个大区域，再添加元素引用框。', 'error');
+          render();
+          return;
+        }
+        var parentBox = data.regions[selectedIndex].bbox;
+        point = clampPointToBox(point, parentBox);
+        dragMode = 'drawElement';
+        startPoint = point;
+        draft = { x: point.x, y: point.y, width: 0, height: 0 };
+        draw();
+        return;
+      }
+
+      var handle = fromViewport || addMode ? null : hitHandle(point);
+      var hitIndex = handle ? selectedIndex : (fromViewport || addMode ? -1 : hitRegion(point));
       if (handle && selectedIndex >= 0) {
-        dragMode = 'resize'; dragHandle = handle; dragOrigin = point; originalBox = cloneBox(data.regions[selectedIndex].bbox);
+        dragMode = 'resize';
+        dragHandle = handle;
+        dragOrigin = point;
+        originalBox = cloneBox(data.regions[selectedIndex].bbox);
+        pendingDragSnapshot = snapshotState();
       } else if (hitIndex >= 0 && !addMode) {
         selectedIndex = hitIndex;
         dragMode = 'move';
         dragOrigin = point;
         originalBox = cloneBox(data.regions[selectedIndex].bbox);
+        pendingDragSnapshot = snapshotState();
       } else {
         selectedIndex = -1;
         addMode = true;
@@ -401,27 +481,45 @@
         draft = { x: point.x, y: point.y, width: 0, height: 0 };
       }
       render();
-    };
-    canvas.onmousemove = function (event) {
-      if (!data) return;
+    }
+
+    function handleCanvasMove(event) {
+      if (!data || !dragMode) return;
       var point = pointer(event);
-      updateCursor(point);
       if (dragMode === 'draw' && startPoint) {
         draft = normalizeRect(startPoint.x, startPoint.y, point.x, point.y);
+      } else if (dragMode === 'drawElement' && startPoint && selectedIndex >= 0) {
+        var parentBox = data.regions[selectedIndex].bbox;
+        var bounded = clampPointToBox(point, parentBox);
+        draft = normalizeRect(startPoint.x, startPoint.y, bounded.x, bounded.y, parentBox);
       } else if (dragMode === 'move' && selectedIndex >= 0) {
         data.regions[selectedIndex].bbox = clampBox({ x: originalBox.x + point.x - dragOrigin.x, y: originalBox.y + point.y - dragOrigin.y, width: originalBox.width, height: originalBox.height });
       } else if (dragMode === 'resize' && selectedIndex >= 0) {
         data.regions[selectedIndex].bbox = resizeBox(originalBox, dragHandle, point);
       }
       draw();
-    };
-    window.onmouseup = function () {
+    }
+
+    function finishCanvasDrag() {
+      if (!dragMode) return;
       if (dragMode === 'draw' && draft && draft.width >= 4 && draft.height >= 4) {
         addRegion(draft);
+      } else if (dragMode === 'drawElement' && draft && draft.width >= 3 && draft.height >= 3 && selectedIndex >= 0) {
+        addElementToRegion(selectedIndex, draft);
+      } else if ((dragMode === 'move' || dragMode === 'resize') && pendingDragSnapshot && pendingDragSnapshot !== snapshotState()) {
+        pushSnapshot(pendingDragSnapshot);
       }
-      startPoint = null; dragMode = null; dragHandle = null; dragOrigin = null; originalBox = null; draft = null; addMode = false;
+      startPoint = null;
+      dragMode = null;
+      dragHandle = null;
+      dragOrigin = null;
+      originalBox = null;
+      draft = null;
+      addMode = false;
+      elementAddMode = false;
+      pendingDragSnapshot = null;
       render();
-    };
+    }
 
     async function loadImageFile(file) {
       if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
@@ -434,7 +532,7 @@
       var scale = 750 / probe.width;
       var canvasHeight = Math.round(probe.height * scale);
       data = {
-        version: 'manual-annotations.v0.2',
+        version: 'manual-annotations.v0.3',
         sourceImage: file.name,
         canvas: { width: 750, height: canvasHeight },
         sourceImageOriginal: { width: probe.width, height: probe.height, fileName: file.name, mimeType: file.type },
@@ -442,6 +540,10 @@
         recognitionWorkflow: buildRecognitionWorkflow(),
         regions: []
       };
+      undoStack = [];
+      redoStack = [];
+      caretByRegion = {};
+      fieldEditKey = '';
       img.src = sourceDataUrl;
       img.style.display = 'block';
       canvas.style.display = 'block';
@@ -496,11 +598,43 @@
 
     function addRegion(bbox) {
       if (!data) return;
+      pushHistory();
       var role = 'moduleBackground';
       var id = nextRegionId(role);
-      data.regions.push({ id: id, role: role, label: '未命名区域', bbox: clampBox(bbox), instruction: '', priority: 'high' });
+      data.regions.push({ id: id, role: role, label: '未命名区域', bbox: clampBox(bbox), instruction: '', priority: 'high', elements: [] });
       selectedIndex = data.regions.length - 1;
       setAnnotationStatus('已新增框选区域，请在右侧填写名称、类型和备注。', 'pending');
+    }
+
+    function addElementToRegion(regionIndex, bbox) {
+      var region = data && data.regions && data.regions[regionIndex];
+      if (!region) return;
+      pushHistory();
+      if (!Array.isArray(region.elements)) region.elements = [];
+      var id = nextElementId();
+      region.elements.push({
+        id: id,
+        role: 'element',
+        label: id,
+        bbox: clampBoxTo(bbox, region.bbox),
+        reference: '[' + id + ']'
+      });
+      selectedIndex = regionIndex;
+      insertElementReference(regionIndex, id);
+      setAnnotationStatus('已添加元素引用框 [' + id + ']，备注里已插入引用。', 'ok');
+      focusInstruction(regionIndex);
+    }
+
+    function deleteElement(regionIndex, elementIndex) {
+      var region = data && data.regions && data.regions[regionIndex];
+      if (!region || !Array.isArray(region.elements) || !region.elements[elementIndex]) return;
+      pushHistory();
+      var removed = region.elements.splice(elementIndex, 1)[0];
+      removeElementReference(region, removed.id);
+      selectedIndex = regionIndex;
+      setAnnotationStatus('已删除元素引用框 [' + removed.id + ']。', 'pending');
+      render();
+      focusInstruction(regionIndex);
     }
 
     function render() {
@@ -521,6 +655,7 @@
       html += data.regions.map(function (region, index) {
         var color = roleColors[region.role] || '#1677ff';
         var active = index === selectedIndex;
+        var elements = Array.isArray(region.elements) ? region.elements : [];
         return '<div class="layerCard ' + (active ? 'active' : '') + '" data-index="' + index + '">' +
           '<div class="layerTop">' +
           '<span class="swatch" style="background:' + color + '"></span>' +
@@ -532,26 +667,92 @@
           '<div class="layerBody">' +
           '<label>备注</label>' +
           '<textarea data-field="instruction" data-index="' + index + '" placeholder="写清楚这个区域怎么拆层：哪些转文字，哪些是按钮/Tab/图标，哪些需要 image2 透明素材，哪些保留背景。">' + escapeHtml(region.instruction || '') + '</textarea>' +
+          '<div class="elementTools">' +
+          '<button class="secondary elementBtn" data-add-element="' + index + '">框选元素引用</button>' +
+          '<span class="hint">在当前区域内继续框选元素，自动插入 [元素ID]。</span>' +
+          '</div>' +
+          renderElementChips(elements, index) +
           '</div>' +
           '</div>';
       }).join('');
       list.innerHTML = html;
     }
 
-    document.getElementById('regions').onclick = function (event) {
+    function markActiveCard(index) {
+      Array.prototype.forEach.call(document.querySelectorAll('.layerCard'), function (card) {
+        card.classList.toggle('active', Number(card.getAttribute('data-index')) === index);
+      });
+    }
+
+    function renderElementChips(elements, regionIndex) {
+      if (!elements.length) {
+        return '<div class="hint">暂无元素引用框。适合标记区域内的按钮、Tab 选中态、图标、艺术字、局部前景。</div>';
+      }
+      return '<div class="elementList">' + elements.map(function (element, elementIndex) {
+        return '<span class="elementChip" title="' + escapeAttr(bboxText(element.bbox)) + '">' +
+          escapeHtml(element.id || ('el_' + (elementIndex + 1))) +
+          '<button class="elementDelete" data-delete-element="' + regionIndex + ':' + elementIndex + '">×</button>' +
+          '</span>';
+      }).join('') + '</div>';
+    }
+
+    var regionsNode = document.getElementById('regions');
+    regionsNode.addEventListener('mousedown', function (event) {
+      if (event.target.closest('input,select,textarea')) event.stopPropagation();
+      rememberInstructionCaret(event.target);
+    });
+    regionsNode.addEventListener('focusin', function (event) {
+      var index = event.target.getAttribute('data-index');
+      if (index !== null) {
+        selectedIndex = Number(index);
+        markActiveCard(selectedIndex);
+        draw();
+      }
+      rememberInstructionCaret(event.target);
+    });
+    regionsNode.addEventListener('focusout', function (event) {
+      rememberInstructionCaret(event.target);
+      fieldEditKey = '';
+    });
+    regionsNode.addEventListener('keyup', function (event) {
+      rememberInstructionCaret(event.target);
+    });
+    regionsNode.addEventListener('click', function (event) {
+      rememberInstructionCaret(event.target);
       var addNode = event.target.closest('[data-add]');
       if (addNode) {
         if (!data) { setAnnotationStatus('请先添加 UI 图。', 'error'); return; }
         selectedIndex = -1;
         addMode = true;
+        elementAddMode = false;
         setAnnotationStatus('在画布上拖拽，创建新的框选区域。', 'pending');
         render();
+        return;
+      }
+      var addElementNode = event.target.closest('[data-add-element]');
+      if (addElementNode) {
+        var addElementIndex = Number(addElementNode.getAttribute('data-add-element'));
+        if (!data || !data.regions[addElementIndex]) return;
+        rememberActiveInstructionCaret();
+        selectedIndex = addElementIndex;
+        addMode = false;
+        elementAddMode = true;
+        setAnnotationStatus('在左侧当前大区域内拖拽，创建元素引用框。', 'pending');
+        render();
+        return;
+      }
+      var delElement = event.target.closest('[data-delete-element]');
+      if (delElement) {
+        event.stopPropagation();
+        var parts = String(delElement.getAttribute('data-delete-element')).split(':');
+        deleteElement(Number(parts[0]), Number(parts[1]));
         return;
       }
       var del = event.target.closest('[data-delete]');
       if (del) {
         event.stopPropagation();
         var deleteIndex = Number(del.getAttribute('data-delete'));
+        pushHistory();
         data.regions.splice(deleteIndex, 1);
         selectedIndex = -1;
         render();
@@ -562,12 +763,12 @@
         selectedIndex = Number(card.getAttribute('data-index'));
         render();
       }
-    };
+    });
 
-    document.getElementById('regions').oninput = function (event) {
+    regionsNode.oninput = function (event) {
       updateRegionField(event.target);
     };
-    document.getElementById('regions').onchange = function (event) {
+    regionsNode.onchange = function (event) {
       updateRegionField(event.target);
     };
 
@@ -576,9 +777,15 @@
       var index = Number(target.getAttribute('data-index'));
       var field = target.getAttribute('data-field');
       if (!data.regions[index] || !field) return;
+      var fieldKey = index + ':' + field;
+      if (target.tagName === 'SELECT' || fieldEditKey !== fieldKey) {
+        pushHistory();
+        fieldEditKey = fieldKey;
+      }
       data.regions[index][field] = target.value;
       if (field === 'label' && !data.regions[index].id) data.regions[index].id = nextRegionId(data.regions[index].role || 'region');
       selectedIndex = index;
+      rememberInstructionCaret(target);
       draw();
       updateSubmitState();
     }
@@ -625,9 +832,16 @@
 
     function draw() {
       if (!data) return;
+      elementDeleteHits = [];
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       data.regions.forEach(function (region, index) { drawBox(region.bbox, roleColors[region.role] || '#1677ff', region.label || region.id, index === selectedIndex); });
-      if (draft) drawBox(draft, '#f97316', '新区域', true);
+      data.regions.forEach(function (region, regionIndex) {
+        var elements = Array.isArray(region.elements) ? region.elements : [];
+        elements.forEach(function (element, elementIndex) {
+          drawElementBox(element.bbox, element.id, regionIndex === selectedIndex, regionIndex, elementIndex);
+        });
+      });
+      if (draft) drawBox(draft, dragMode === 'drawElement' ? '#f97316' : '#1677ff', dragMode === 'drawElement' ? '新元素' : '新区域', true);
     }
 
     function drawBox(bbox, color, label, active) {
@@ -664,6 +878,46 @@
       points.forEach(function (p) { var x = p[0] * sx; var y = p[1] * sy; ctx.fillRect(x - 4, y - 4, 8, 8); ctx.strokeRect(x - 4, y - 4, 8, 8); });
     }
 
+    function drawElementBox(bbox, id, active, regionIndex, elementIndex) {
+      if (!bbox) return;
+      var sx = canvas.width / data.canvas.width;
+      var sy = canvas.height / data.canvas.height;
+      var x = bbox.x * sx;
+      var y = bbox.y * sy;
+      var w = bbox.width * sx;
+      var h = bbox.height * sy;
+      var color = '#f97316';
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = active ? 2 : 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = active ? .14 : .08;
+      ctx.fillRect(x, y, w, h);
+      ctx.globalAlpha = 1;
+      ctx.font = '11px Inter, Arial';
+      var label = '[' + String(id || '') + ']';
+      var labelWidth = ctx.measureText(label).width + 24;
+      var tagWidth = Math.min(Math.max(48, labelWidth), Math.max(48, w));
+      var tagX = Math.max(x, x + w - tagWidth);
+      var tagY = Math.max(y, y + 2);
+      ctx.fillStyle = '#fff7ed';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.fillRect(tagX, tagY, tagWidth, 18);
+      ctx.strokeRect(tagX, tagY, tagWidth, 18);
+      ctx.fillStyle = '#9a3412';
+      ctx.fillText(label, tagX + 5, tagY + 13);
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(tagX + tagWidth - 18, tagY, 18, 18);
+      ctx.fillStyle = '#9a3412';
+      ctx.fillText('×', tagX + tagWidth - 13, tagY + 13);
+      elementDeleteHits.push({ regionIndex: regionIndex, elementIndex: elementIndex, x: tagX + tagWidth - 18, y: tagY, width: 18, height: 18 });
+      ctx.restore();
+    }
+
     function applyZoomChoice() {
       if (!data) return;
       var choice = document.getElementById('scaleSelect').value;
@@ -690,16 +944,147 @@
 
     function pointer(event) {
       var rect = canvas.getBoundingClientRect();
-      return { x: Math.round((event.clientX - rect.left) * data.canvas.width / rect.width), y: Math.round((event.clientY - rect.top) * data.canvas.height / rect.height) };
+      var rawX = (event.clientX - rect.left) * data.canvas.width / rect.width;
+      var rawY = (event.clientY - rect.top) * data.canvas.height / rect.height;
+      return { x: clampNumber(Math.round(rawX), 0, data.canvas.width), y: clampNumber(Math.round(rawY), 0, data.canvas.height) };
     }
-    function normalizeRect(x1, y1, x2, y2) { return clampBox({ x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) }); }
+    function normalizeRect(x1, y1, x2, y2, bounds) { return clampBoxTo({ x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) }, bounds || { x: 0, y: 0, width: data.canvas.width, height: data.canvas.height }); }
     function hitRegion(point) { for (var i = data.regions.length - 1; i >= 0; i -= 1) { var b = data.regions[i].bbox; if (point.x >= b.x && point.x <= b.x + b.width && point.y >= b.y && point.y <= b.y + b.height) return i; } return -1; }
     function hitHandle(point) { if (selectedIndex < 0) return null; var b = data.regions[selectedIndex].bbox; var t = Math.max(6, Math.round(8 / zoom)); var h = { nw:[b.x,b.y], ne:[b.x+b.width,b.y], sw:[b.x,b.y+b.height], se:[b.x+b.width,b.y+b.height] }; for (var key in h) if (Math.abs(point.x - h[key][0]) <= t && Math.abs(point.y - h[key][1]) <= t) return key; return null; }
     function updateCursor(point) { var handle = hitHandle(point); canvas.style.cursor = handle === 'nw' || handle === 'se' ? 'nwse-resize' : handle === 'ne' || handle === 'sw' ? 'nesw-resize' : hitRegion(point) >= 0 ? 'move' : 'crosshair'; }
     function resizeBox(box, handle, point) { var x1 = box.x, y1 = box.y, x2 = box.x + box.width, y2 = box.y + box.height; if (handle.indexOf('n') !== -1) y1 = point.y; if (handle.indexOf('s') !== -1) y2 = point.y; if (handle.indexOf('w') !== -1) x1 = point.x; if (handle.indexOf('e') !== -1) x2 = point.x; return normalizeRect(x1, y1, x2, y2); }
     function cloneBox(box) { return { x: box.x, y: box.y, width: box.width, height: box.height }; }
-    function clampBox(box) { var x = Math.max(0, Math.min(data.canvas.width - 1, Math.round(box.x))); var y = Math.max(0, Math.min(data.canvas.height - 1, Math.round(box.y))); return { x: x, y: y, width: Math.max(1, Math.min(data.canvas.width - x, Math.round(box.width))), height: Math.max(1, Math.min(data.canvas.height - y, Math.round(box.height))) }; }
+    function clampBox(box) { return clampBoxTo(box, { x: 0, y: 0, width: data.canvas.width, height: data.canvas.height }); }
+    function clampBoxTo(box, bounds) {
+      bounds = bounds || { x: 0, y: 0, width: data.canvas.width, height: data.canvas.height };
+      var width = Math.max(1, Math.min(Math.round(box.width), Math.round(bounds.width)));
+      var height = Math.max(1, Math.min(Math.round(box.height), Math.round(bounds.height)));
+      var x = clampNumber(Math.round(box.x), Math.round(bounds.x), Math.round(bounds.x + bounds.width - width));
+      var y = clampNumber(Math.round(box.y), Math.round(bounds.y), Math.round(bounds.y + bounds.height - height));
+      return { x: x, y: y, width: width, height: height };
+    }
+    function clampPointToBox(point, box) {
+      return { x: clampNumber(point.x, box.x, box.x + box.width), y: clampNumber(point.y, box.y, box.y + box.height) };
+    }
+    function clampNumber(value, min, max) {
+      if (max < min) max = min;
+      return Math.max(min, Math.min(max, value));
+    }
     function nextRegionId(role) { var used = {}; data.regions.forEach(function (r) { used[r.id] = true; }); var i = data.regions.length + 1; var id = sanitizeId(role) + '_' + String(i).padStart(2, '0'); while (used[id]) { i += 1; id = sanitizeId(role) + '_' + String(i).padStart(2, '0'); } return id; }
+    function nextElementId() {
+      var used = {};
+      data.regions.forEach(function (region) {
+        (region.elements || []).forEach(function (element) { used[element.id] = true; });
+      });
+      var i = 1;
+      var id = 'el_' + String(i).padStart(2, '0');
+      while (used[id]) { i += 1; id = 'el_' + String(i).padStart(2, '0'); }
+      return id;
+    }
+    function deleteElementFromCanvas(event) {
+      if (!data || !elementDeleteHits.length) return false;
+      var rect = canvas.getBoundingClientRect();
+      var x = event.clientX - rect.left;
+      var y = event.clientY - rect.top;
+      for (var i = elementDeleteHits.length - 1; i >= 0; i -= 1) {
+        var hit = elementDeleteHits[i];
+        if (x >= hit.x && x <= hit.x + hit.width && y >= hit.y && y <= hit.y + hit.height) {
+          event.preventDefault();
+          event.stopPropagation();
+          deleteElement(hit.regionIndex, hit.elementIndex);
+          return true;
+        }
+      }
+      return false;
+    }
+    function insertElementReference(regionIndex, elementId) {
+      var region = data.regions[regionIndex];
+      var token = '[' + elementId + ']';
+      var text = region.instruction || '';
+      var caret = caretByRegion[regionIndex] || { start: text.length, end: text.length };
+      var start = clampNumber(caret.start, 0, text.length);
+      var end = clampNumber(caret.end, start, text.length);
+      var before = text.slice(0, start);
+      var after = text.slice(end);
+      var prefixSpace = before && !/\s$/.test(before) ? ' ' : '';
+      var suffixSpace = after && !/^\s/.test(after) ? ' ' : '';
+      region.instruction = before + prefixSpace + token + suffixSpace + after;
+      var position = (before + prefixSpace + token).length;
+      caretByRegion[regionIndex] = { start: position, end: position };
+    }
+    function removeElementReference(region, elementId) {
+      if (!region || !region.instruction) return;
+      var pattern = new RegExp('\\s*\\[' + escapeRegExp(elementId) + '\\]\\s*', 'g');
+      region.instruction = region.instruction.replace(pattern, ' ').replace(/\s{2,}/g, ' ').trim();
+    }
+    function rememberInstructionCaret(target) {
+      if (!target || target.getAttribute('data-field') !== 'instruction') return;
+      var index = Number(target.getAttribute('data-index'));
+      caretByRegion[index] = { start: target.selectionStart || 0, end: target.selectionEnd || target.selectionStart || 0 };
+    }
+    function rememberActiveInstructionCaret() {
+      rememberInstructionCaret(document.activeElement);
+    }
+    function focusInstruction(regionIndex) {
+      setTimeout(function () {
+        var target = document.querySelector('textarea[data-field="instruction"][data-index="' + regionIndex + '"]');
+        if (!target) return;
+        var caret = caretByRegion[regionIndex] || { start: target.value.length, end: target.value.length };
+        target.focus();
+        target.setSelectionRange(caret.start, caret.end);
+      }, 0);
+    }
+    function snapshotState() {
+      return JSON.stringify({ data: data, selectedIndex: selectedIndex });
+    }
+    function pushHistory() {
+      if (!data) return;
+      pushSnapshot(snapshotState());
+    }
+    function pushSnapshot(snapshot) {
+      if (!snapshot) return;
+      if (undoStack.length && undoStack[undoStack.length - 1] === snapshot) return;
+      undoStack.push(snapshot);
+      if (undoStack.length > 80) undoStack.shift();
+      redoStack = [];
+    }
+    function restoreSnapshot(snapshot) {
+      var state = JSON.parse(snapshot);
+      data = state.data;
+      selectedIndex = typeof state.selectedIndex === 'number' ? state.selectedIndex : -1;
+      addMode = false;
+      elementAddMode = false;
+      dragMode = null;
+      draft = null;
+      fieldEditKey = '';
+      render();
+    }
+    function undo() {
+      if (!data || !undoStack.length) return;
+      redoStack.push(snapshotState());
+      restoreSnapshot(undoStack.pop());
+      setAnnotationStatus('已撤销。', 'pending');
+    }
+    function redo() {
+      if (!data || !redoStack.length) return;
+      undoStack.push(snapshotState());
+      restoreSnapshot(redoStack.pop());
+      setAnnotationStatus('已重做。', 'pending');
+    }
+    function handleShortcut(event) {
+      var key = String(event.key || '').toLowerCase();
+      if (!(event.metaKey || event.ctrlKey)) return;
+      var wantsUndo = key === 'z' && !event.shiftKey;
+      var wantsRedo = (key === 'z' && event.shiftKey) || key === 'y';
+      if (!wantsUndo && !wantsRedo) return;
+      if (isEditableTarget(event.target)) return;
+      event.preventDefault();
+      if (wantsRedo) redo();
+      else undo();
+    }
+    function isEditableTarget(target) {
+      return Boolean(target && target.closest && target.closest('input,textarea,select,[contenteditable="true"]'));
+    }
     function sanitizeId(value) { return String(value || 'region').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'region'; }
     function bboxText(b) { return b ? Math.round(b.x) + ',' + Math.round(b.y) + ' / ' + Math.round(b.width) + 'x' + Math.round(b.height) : '无坐标'; }
     function roleOptions(selected) { return roleOrder.map(function (role) { return '<option value="' + role + '"' + (role === selected ? ' selected' : '') + '>' + roleLabels[role] + '</option>'; }).join(''); }
@@ -715,6 +1100,7 @@
     function appendLog(line) { var time = new Date().toLocaleTimeString(); logNode.textContent = time + ' ' + line + '\n' + logNode.textContent; }
     function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, function (char) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[char]; }); }
     function escapeAttr(text) { return escapeHtml(text).replace(/`/g, '&#096;'); }
+    function escapeRegExp(text) { return String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   </script>
 </body>
 </html>
